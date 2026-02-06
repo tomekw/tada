@@ -1,0 +1,22 @@
+with "tada_config.gpr";
+with "tada.gpr";
+with "aunit.gpr";
+
+project Tada_Tests is
+
+   for Source_Dirs use ("tests");
+   for Object_Dir use "target/" & Tada_Config.Build_Profile & "/obj-tests";
+   for Exec_Dir use "target/" & Tada_Config.Build_Profile & "/bin";
+   for Main use ("run_tests.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        Tada_Config.Ada_Switches &
+        Tada_Config.Style_Switches;
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("Ada") use ("-Es");
+   end Binder;
+
+end Tada_Tests;

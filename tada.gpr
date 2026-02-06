@@ -1,0 +1,29 @@
+with "tada_config.gpr";
+
+project Tada is
+
+   for Source_Dirs use ("src");
+   for Object_Dir use "target/" & Tada_Config.Build_Profile & "/obj";
+   for Exec_Dir use "target/" & Tada_Config.Build_Profile & "/bin";
+   for Main use ("tada-main.adb");
+
+   package Builder is
+      for Executable ("tada-main.adb") use "tada";
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        Tada_Config.Ada_Switches &
+        Tada_Config.Style_Switches;
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("Ada") use ("-Es");
+   end Binder;
+
+   package Linker is
+      for Default_Switches ("Ada") use
+        Tada_Config.Linker_Switches;
+   end Linker;
+
+end Tada;

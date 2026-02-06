@@ -1,0 +1,35 @@
+abstract project Tada_Config is
+
+   type Build_Profile_Kind is ("debug", "release");
+   Build_Profile : Build_Profile_Kind :=
+     external ("BUILD_PROFILE", "debug");
+
+   Common_Switches := ("-gnat2022", "-gnatwa", "-gnata");
+   Style_Switches := ("-gnatyaAbCdefhiklnOprStux");
+
+   Debug_Switches := Common_Switches &
+     ("-g",       --  Debug info
+      "-O0",      --  No optimization
+      "-gnateE",  --  Extra exception info
+      "-gnatVa"); --  All validity checks
+
+   Release_Switches := Common_Switches &
+     ("-O2",          --  Optimization
+      "-gnatn",       --  Inlining
+      "-fdata-sections",
+      "-ffunction-sections");
+
+   Ada_Switches := ();
+   case Build_Profile is
+      when "debug"   => Ada_Switches := Debug_Switches;
+      when "release" => Ada_Switches := Release_Switches;
+   end case;
+
+   Linker_Switches := ();
+   case Build_Profile is
+      when "debug"   => Linker_Switches := ();
+      when "release" =>
+         Linker_Switches := ("-Wl,--gc-sections");
+   end case;
+
+end Tada_Config;
