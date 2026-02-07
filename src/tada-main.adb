@@ -98,6 +98,27 @@ procedure Tada.Main is
    begin
       return Result;
    end Is_Valid_Profile;
+
+   function Read_Project_Name return String is
+      File : Text_IO.File_Type;
+      Line : String (1 .. 256);
+      Last : Natural;
+      Prefix : constant String := "name = """;
+   begin
+      Text_IO.Open (File, Text_IO.In_File, "tada.toml");
+      Text_IO.Get_Line (File, Line, Last);
+      Text_IO.Close (File);
+
+      if Last > Prefix'Length + 1
+         and then Line (1 .. Prefix'Length) = Prefix
+         and then Line (Last) = '"'
+      then
+         return Line (Prefix'Length + 1 .. Last - 1);
+      else
+         raise Constraint_Error
+         with "invalid tada.toml format";
+      end if;
+   end Read_Project_Name;
 begin
    if Argument_Count = 0 then
       Print_Usage;
@@ -133,14 +154,16 @@ begin
          end if;
 
          declare
+            Project_Name : constant String := Read_Project_Name;
+            Tests_Project_Name : constant String := Project_Name & "_tests";
             Build_Profile : constant String := Command_Line.Argument (3);
          begin
-            if not Execute_Build ("tada", Build_Profile) then
+            if not Execute_Build (Project_Name, Build_Profile) then
                Command_Line.Set_Exit_Status (Command_Line.Failure);
                return;
             end if;
 
-            if not Execute_Build ("tada_tests", Build_Profile) then
+            if not Execute_Build (Tests_Project_Name, Build_Profile) then
                Command_Line.Set_Exit_Status (Command_Line.Failure);
                return;
             end if;
