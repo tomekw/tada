@@ -80,20 +80,24 @@ procedure Tada.Main is
       return Result;
    end Execute_Build;
 
-   function Build_Profile return String is
+   procedure Print_Invalid_Profile is
+   begin
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: invalid build profile");
+   end Print_Invalid_Profile;
+
+   function Is_Valid_Profile return Boolean is
+      No_Profile_Flag : constant Boolean := Argument_Count = 1;
+
       Has_Profile_Flag : constant Boolean :=
         Argument_Count = 3 and then Command_Line.Argument (2) = "--profile";
 
-      Valid_Profile : constant Boolean :=
-        Has_Profile_Flag and then
-        (Command_Line.Argument (3) = "debug" or else
-         Command_Line.Argument (3) = "release");
-
-      Profile : constant String :=
-        (if Valid_Profile then Command_Line.Argument (3) else "debug");
+      Result : constant Boolean :=
+        No_Profile_Flag or else (Has_Profile_Flag and then
+                                 (Command_Line.Argument (3) = "debug" or else
+                                  Command_Line.Argument (3) = "release"));
    begin
-      return Profile;
-   end Build_Profile;
+      return Result;
+   end Is_Valid_Profile;
 begin
    if Argument_Count = 0 then
       Print_Usage;
@@ -110,6 +114,12 @@ begin
             return;
          end if;
 
+         if not Is_Valid_Profile then
+            Print_Invalid_Profile;
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         end if;
+
          if not Exec_On_Path ("gprbuild") then
             Print_Exec_Not_Found ("gprbuild");
             Command_Line.Set_Exit_Status (Command_Line.Failure);
@@ -122,15 +132,19 @@ begin
             return;
          end if;
 
-         if not Execute_Build ("tada", Build_Profile) then
-            Command_Line.Set_Exit_Status (Command_Line.Failure);
-            return;
-         end if;
+         declare
+            Build_Profile : constant String := Command_Line.Argument (3);
+         begin
+            if not Execute_Build ("tada", Build_Profile) then
+               Command_Line.Set_Exit_Status (Command_Line.Failure);
+               return;
+            end if;
 
-         if not Execute_Build ("tada_tests", Build_Profile) then
-            Command_Line.Set_Exit_Status (Command_Line.Failure);
-            return;
-         end if;
+            if not Execute_Build ("tada_tests", Build_Profile) then
+               Command_Line.Set_Exit_Status (Command_Line.Failure);
+               return;
+            end if;
+         end;
       elsif Command_Name = "clean" then
          if not In_Project_Root then
             Print_Not_In_Project_Root;
