@@ -57,8 +57,43 @@ procedure Tada.Main is
       Result : constant Boolean := Path /= null;
    begin
       OS.Free (Path);
+
       return Result;
    end Exec_On_Path;
+
+   function Execute_Build (Project : String; Profile : String) return Boolean is
+      GPRBuild_Path : OS.String_Access := OS.Locate_Exec_On_Path ("gprbuild");
+      Args : OS.Argument_List (1 .. 4) :=
+        [new String'("-P"),
+          new String'(Project & ".gpr"),
+          new String'("-XBUILD_PROFILE=" & Profile),
+          new String'("-p")];
+      Result : Boolean;
+   begin
+      OS.Spawn (GPRBuild_Path.all, Args, Result);
+
+      OS.Free (GPRBuild_Path);
+      for Arg of Args loop
+         OS.Free (Arg);
+      end loop;
+
+      return Result;
+   end Execute_Build;
+
+   function Build_Profile return String is
+      Has_Profile_Flag : constant Boolean :=
+        Argument_Count = 3 and then Command_Line.Argument (2) = "--profile";
+
+      Valid_Profile : constant Boolean :=
+        Has_Profile_Flag and then
+        (Command_Line.Argument (3) = "debug" or else
+         Command_Line.Argument (3) = "release");
+
+      Profile : constant String :=
+        (if Valid_Profile then Command_Line.Argument (3) else "debug");
+   begin
+      return Profile;
+   end Build_Profile;
 begin
    if Argument_Count = 0 then
       Print_Usage;
@@ -68,7 +103,35 @@ begin
    declare
       Command_Name : constant String := Command_Line.Argument (1);
    begin
-      if Command_Name = "clean" then
+      if Command_Name = "build" then
+         if not In_Project_Root then
+            Print_Not_In_Project_Root;
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         end if;
+
+         if not Exec_On_Path ("gprbuild") then
+            Print_Exec_Not_Found ("gprbuild");
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         end if;
+
+         if not Exec_On_Path ("gnatmake") then
+            Print_Exec_Not_Found ("gnatmake");
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         end if;
+
+         if not Execute_Build ("tada", Build_Profile) then
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         end if;
+
+         if not Execute_Build ("tada_tests", Build_Profile) then
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         end if;
+      elsif Command_Name = "clean" then
          if not In_Project_Root then
             Print_Not_In_Project_Root;
             Command_Line.Set_Exit_Status (Command_Line.Failure);
