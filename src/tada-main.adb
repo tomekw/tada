@@ -26,14 +26,14 @@ procedure Tada.Main is
 
    procedure Print_Unknown_Command (Command_Name : String) is
    begin
-      Text_IO.Put_Line ("tada: unknown command '" & Command_Name & "'");
-      Text_IO.New_Line;
-      Text_IO.Put_Line ("Run 'tada help' for usage.");
+      Text_IO.Put_Line (Text_IO.Standard_Error, "tada: unknown command '" & Command_Name & "'");
+      Text_IO.New_Line (Text_IO.Standard_Error);
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Run 'tada help' for usage.");
    end Print_Unknown_Command;
 
    procedure Print_Not_In_Project_Root is
    begin
-      Text_IO.Put_Line ("Error: could not find `tada.toml` in current directory");
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find `tada.toml` in current directory");
    end Print_Not_In_Project_Root;
 
    function In_Project_Root return Boolean is
@@ -47,7 +47,7 @@ procedure Tada.Main is
 
    procedure Print_Exec_Not_Found (Exec_Name : String) is
    begin
-      Text_IO.Put_Line ("Error: could not find executable `" & Exec_Name & "` in PATH");
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find executable `" & Exec_Name & "` in PATH");
    end Print_Exec_Not_Found;
 
    function Exec_On_Path (Exec_Name : String) return Boolean is
