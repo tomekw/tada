@@ -9,10 +9,9 @@ package body Tada.Commands is
 
    package OS renames GNAT.OS_Lib;
 
-   function From (Arguments : CL_Arguments.Argument_List.Vector)
-     return Command is
-      Arguments_Count : constant Natural :=
-        Natural (CL_Arguments.Argument_List.Length (Arguments));
+   function From (Arguments : CL_Arguments.Argument_List.Vector) return Command
+   is
+      Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
       if Arguments_Count = 0 or else
          (Arguments_Count = 1 and then
