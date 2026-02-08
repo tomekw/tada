@@ -4,12 +4,17 @@ with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
+with Tada.CL_Arguments;
+
 procedure Tada.Main is
    use Ada;
 
    package OS renames GNAT.OS_Lib;
 
-   Argument_Count : constant Natural := Command_Line.Argument_Count;
+   Arguments : constant CL_Arguments.Argument_List.Vector :=
+     CL_Arguments.Consume;
+
+   Argument_Count : constant Natural := Natural (CL_Arguments.Argument_List.Length (Arguments));
 
    procedure Print_Usage is
    begin
@@ -88,9 +93,9 @@ procedure Tada.Main is
    function Is_Valid_Profile return Boolean is
       No_Profile_Flag : constant Boolean := Argument_Count = 1;
       Valid_Profile_Flag : constant Boolean := Argument_Count = 3 and then
-                                               Command_Line.Argument (2) = "--profile" and then
-                                               (Command_Line.Argument (3) = "debug" or else
-                                                Command_Line.Argument (3) = "release");
+                                               Arguments (2) = "--profile" and then
+                                               (Arguments (3) = "debug" or else
+                                                Arguments (3) = "release");
    begin
       return No_Profile_Flag or else Valid_Profile_Flag;
    end Is_Valid_Profile;
@@ -103,7 +108,7 @@ procedure Tada.Main is
       end if;
 
       if Is_Valid_Profile then
-         return Command_Line.Argument (3);
+         return Arguments (3);
       else
          raise Program_Error with "unreachable";
       end if;
@@ -125,8 +130,7 @@ procedure Tada.Main is
       then
          return Line (Prefix'Length + 1 .. Last - 1);
       else
-         raise Constraint_Error
-         with "invalid tada.toml format";
+         raise Constraint_Error with "invalid tada.toml format";
       end if;
    end Read_Project_Name;
 begin
@@ -136,7 +140,7 @@ begin
    end if;
 
    declare
-      Command_Name : constant String := Command_Line.Argument (1);
+      Command_Name : constant String := Arguments (1);
    begin
       if Command_Name = "build" then
          if not In_Project_Root then
