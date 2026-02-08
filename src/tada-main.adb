@@ -87,17 +87,27 @@ procedure Tada.Main is
 
    function Is_Valid_Profile return Boolean is
       No_Profile_Flag : constant Boolean := Argument_Count = 1;
-
-      Has_Profile_Flag : constant Boolean :=
-        Argument_Count = 3 and then Command_Line.Argument (2) = "--profile";
-
-      Result : constant Boolean :=
-        No_Profile_Flag or else (Has_Profile_Flag and then
-                                 (Command_Line.Argument (3) = "debug" or else
-                                  Command_Line.Argument (3) = "release"));
+      Valid_Profile_Flag : constant Boolean := Argument_Count = 3 and then
+                                               Command_Line.Argument (2) = "--profile" and then
+                                               (Command_Line.Argument (3) = "debug" or else
+                                                Command_Line.Argument (3) = "release");
    begin
-      return Result;
+      return No_Profile_Flag or else Valid_Profile_Flag;
    end Is_Valid_Profile;
+
+   function Read_Profile return String is
+      No_Profile_Flag : constant Boolean := Argument_Count = 1;
+   begin
+      if No_Profile_Flag then
+         return "debug";
+      end if;
+
+      if Is_Valid_Profile then
+         return Command_Line.Argument (3);
+      else
+         raise Program_Error with "unreachable";
+      end if;
+   end Read_Profile;
 
    function Read_Project_Name return String is
       File : Text_IO.File_Type;
@@ -155,15 +165,9 @@ begin
 
          declare
             Project_Name : constant String := Read_Project_Name;
-            Tests_Project_Name : constant String := Project_Name & "_tests";
-            Build_Profile : constant String := Command_Line.Argument (3);
+            Build_Profile : constant String := Read_Profile;
          begin
             if not Execute_Build (Project_Name, Build_Profile) then
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
-            end if;
-
-            if not Execute_Build (Tests_Project_Name, Build_Profile) then
                Command_Line.Set_Exit_Status (Command_Line.Failure);
                return;
             end if;
