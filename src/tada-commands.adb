@@ -141,12 +141,6 @@ package body Tada.Commands is
                return;
             end if;
 
-            if not Exec_On_Path ("gnatmake") then
-               Print_Exec_Not_Found ("gnatmake");
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
-            end if;
-
             declare
                Project_Name : constant String := Read_Project_Name;
                Build_Profile : constant String :=
