@@ -1,9 +1,13 @@
 with Tada.CL_Arguments;
+with Ada.Strings.Unbounded;
 
 package Tada.Commands is
+   use Ada.Strings.Unbounded;
+
    type Command_Kind is (Build,
                          Clean,
-                         Help);
+                         Help,
+                         Invalid);
 
    type Profile_Kind is (Debug,
                          Release);
@@ -14,6 +18,8 @@ package Tada.Commands is
             Profile : Profile_Kind;
          when Clean | Help =>
             null;
+         when Invalid =>
+            Unknown_Name : Unbounded_String;
       end case;
    end record;
 

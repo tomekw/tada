@@ -39,7 +39,7 @@ package body Tada.Commands is
             return (Kind => Build, Profile => Build_Profile);
          end;
       else
-         return (Kind => Help);
+         return (Kind => Invalid, Unknown_Name => To_Unbounded_String (Arguments (1)));
       end if;
    end From;
 
@@ -143,6 +143,13 @@ package body Tada.Commands is
       Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find executable `" & Exec_Name & "` in PATH");
    end Print_Exec_Not_Found;
 
+   procedure Print_Unknown_Command (Command_Name : String) is
+   begin
+      Text_IO.Put_Line (Text_IO.Standard_Error, "tada: unknown command '" & Command_Name & "'");
+      Text_IO.New_Line (Text_IO.Standard_Error);
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Run 'tada help' for usage.");
+   end Print_Unknown_Command;
+
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
@@ -182,6 +189,10 @@ package body Tada.Commands is
             end if;
          when Help =>
             Print_Usage;
+         when Invalid =>
+            Print_Unknown_Command (To_String (Cmd.Unknown_Name));
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
       end case;
    end Execute;
 end Tada.Commands;
