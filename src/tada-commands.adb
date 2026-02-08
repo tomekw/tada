@@ -27,6 +27,7 @@ package body Tada.Commands is
       then
          return (Kind => Build, Profile => Debug);
       elsif Arguments_Count = 3 and then
+            Arguments (1) = "build" and then
             Arguments (2) = "--profile" and then
             (Arguments (3) = "debug" or else
              Arguments (3) = "release")
