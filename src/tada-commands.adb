@@ -64,15 +64,19 @@ package body Tada.Commands is
    end Exec_On_Path;
 
    function Execute_Build (Project : String; Profile : String) return Boolean is
+      use type OS.String_Access;
+
       GPRBuild_Path : OS.String_Access := OS.Locate_Exec_On_Path ("gprbuild");
       Args : OS.Argument_List (1 .. 4) :=
         [new String'("-P"),
           new String'(Project & ".gpr"),
           new String'("-XBUILD_PROFILE=" & Profile),
           new String'("-p")];
-      Result : Boolean;
+      Result : Boolean := False;
    begin
-      OS.Spawn (GPRBuild_Path.all, Args, Result);
+      if GPRBuild_Path /= null then
+         OS.Spawn (GPRBuild_Path.all, Args, Result);
+      end if;
 
       OS.Free (GPRBuild_Path);
       for Arg of Args loop
@@ -80,6 +84,14 @@ package body Tada.Commands is
       end loop;
 
       return Result;
+   exception
+      when others =>
+         OS.Free (GPRBuild_Path);
+         for Arg of Args loop
+            OS.Free (Arg);
+         end loop;
+
+         return False;
    end Execute_Build;
 
    function Read_Project_Name return String is
@@ -100,6 +112,12 @@ package body Tada.Commands is
       else
          raise Constraint_Error with "invalid tada.toml format";
       end if;
+   exception
+      when others =>
+         if Text_IO.Is_Open (File) then
+            Text_IO.Close (File);
+         end if;
+         raise;
    end Read_Project_Name;
 
    procedure Print_Usage is
