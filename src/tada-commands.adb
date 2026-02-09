@@ -1,3 +1,4 @@
+with Ada.Characters.Handling;
 with Ada.Command_Line;
 with Ada.Directories;
 with Ada.Strings.Unbounded;
@@ -12,6 +13,9 @@ package body Tada.Commands is
    package OS renames GNAT.OS_Lib;
 
    package Profile_Results is new Results (Profile_Kind);
+
+   function Image (P : Profile_Kind) return String is
+     (Characters.Handling.To_Lower (Profile_Kind'Image (P)));
 
    function Parse_Profile (Arguments : CL_Arguments.Argument_List.Vector)
      return Profile_Results.Result
@@ -233,10 +237,8 @@ package body Tada.Commands is
 
             declare
                Project_Name : constant String := Read_Project_Name;
-               Build_Profile : constant String :=
-                 (if Cmd.Profile = Release then "release" else "debug");
             begin
-               if not Execute_Build (Project_Name, Build_Profile) then
+               if not Execute_Build (Project_Name, Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
@@ -256,15 +258,13 @@ package body Tada.Commands is
 
             declare
                Project_Name : constant String := Read_Project_Name;
-               Build_Profile : constant String :=
-                 (if Cmd.Profile = Release then "release" else "debug");
             begin
-               if not Execute_Build (Project_Name & "_tests", Build_Profile) then
+               if not Execute_Build (Project_Name & "_tests", Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               if not Execute_Target ("target/" & Build_Profile & "/bin/run_tests") then
+               if not Execute_Target ("target/" & Image (Cmd.Profile) & "/bin/run_tests") then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
