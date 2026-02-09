@@ -5,6 +5,7 @@ package Tada.Commands is
    use Ada.Strings.Unbounded;
 
    type Command_Kind is (Build,
+                         Test,
                          Clean,
                          Help,
                          Invalid_Command,
@@ -15,7 +16,7 @@ package Tada.Commands is
 
    type Command (Kind : Command_Kind := Help) is record
       case Kind is
-         when Build =>
+         when Build | Test =>
             Profile : Profile_Kind;
          when Clean | Help =>
             null;

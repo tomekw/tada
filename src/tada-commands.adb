@@ -38,6 +38,22 @@ package body Tada.Commands is
          begin
             return (Kind => Build, Profile => Build_Profile);
          end;
+      elsif Arguments_Count = 1 and then
+            Arguments (1) = "test"
+      then
+         return (Kind => Test, Profile => Debug);
+      elsif Arguments_Count = 3 and then
+            Arguments (1) = "test" and then
+            Arguments (2) = "--profile" and then
+            (Arguments (3) = "debug" or else
+             Arguments (3) = "release")
+      then
+         declare
+            Test_Profile : constant Profile_Kind :=
+              (if Arguments (3) = "release" then Release else Debug);
+         begin
+            return (Kind => Test, Profile => Test_Profile);
+         end;
       elsif Arguments_Count = 3 and then
             Arguments (2) = "--profile" and then
             Arguments (3) /= "debug" and then
@@ -101,6 +117,17 @@ package body Tada.Commands is
 
          return False;
    end Execute_Build;
+
+   function Execute_Target (Name : String) return Boolean is
+      Result : Boolean := False;
+   begin
+      OS.Spawn (Name, OS.Argument_List'(1 .. 0 => null), Result);
+
+      return Result;
+   exception
+      when others =>
+         return False;
+   end Execute_Target;
 
    function Read_Project_Name return String is
       File : Text_IO.File_Type;
@@ -187,6 +214,34 @@ package body Tada.Commands is
                  (if Cmd.Profile = Release then "release" else "debug");
             begin
                if not Execute_Build (Project_Name, Build_Profile) then
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+            end;
+         when Test =>
+            if not In_Project_Root then
+               Print_Not_In_Project_Root;
+               Command_Line.Set_Exit_Status (Command_Line.Failure);
+               return;
+            end if;
+
+            if not Exec_On_Path ("gprbuild") then
+               Print_Exec_Not_Found ("gprbuild");
+               Command_Line.Set_Exit_Status (Command_Line.Failure);
+               return;
+            end if;
+
+            declare
+               Project_Name : constant String := Read_Project_Name;
+               Build_Profile : constant String :=
+                 (if Cmd.Profile = Release then "release" else "debug");
+            begin
+               if not Execute_Build (Project_Name & "_tests", Build_Profile) then
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+
+               if not Execute_Target ("target/" & Build_Profile & "/bin/run_tests") then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
