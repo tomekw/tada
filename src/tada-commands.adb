@@ -1,71 +1,108 @@
 with Ada.Command_Line;
 with Ada.Directories;
+with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
 package body Tada.Commands is
    use Ada;
+   use Ada.Strings.Unbounded;
 
    package OS renames GNAT.OS_Lib;
 
-   function From (Arguments : CL_Arguments.Argument_List.Vector) return Command
+   package Profile_Results is new Results (Profile_Kind);
+
+   function Parse_Profile (Arguments : CL_Arguments.Argument_List.Vector)
+     return Profile_Results.Result
    is
+      use Profile_Results;
+
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
-      if Arguments_Count = 0 or else
-         (Arguments_Count = 1 and then
-          Arguments (1) = "help")
+      if Arguments_Count < 2 then
+         return (Status => Ok,
+                 Value => Debug);
+      elsif Arguments_Count = 2 and then
+            Arguments (2) = "--profile"
       then
-         return (Kind => Help);
-      elsif Arguments_Count = 1 and then
-            Arguments (1) = "clean"
-      then
-         return (Kind => Clean);
-      elsif Arguments_Count = 1 and then
-            Arguments (1) = "build"
-      then
-         return (Kind => Build, Profile => Debug);
-      elsif Arguments_Count = 3 and then
-            Arguments (1) = "build" and then
-            Arguments (2) = "--profile" and then
-            (Arguments (3) = "debug" or else
-             Arguments (3) = "release")
-      then
-         declare
-            Build_Profile : constant Profile_Kind :=
-              (if Arguments (3) = "release" then Release else Debug);
-         begin
-            return (Kind => Build, Profile => Build_Profile);
-         end;
-      elsif Arguments_Count = 1 and then
-            Arguments (1) = "test"
-      then
-         return (Kind => Test, Profile => Debug);
-      elsif Arguments_Count = 3 and then
-            Arguments (1) = "test" and then
-            Arguments (2) = "--profile" and then
-            (Arguments (3) = "debug" or else
-             Arguments (3) = "release")
-      then
-         declare
-            Test_Profile : constant Profile_Kind :=
-              (if Arguments (3) = "release" then Release else Debug);
-         begin
-            return (Kind => Test, Profile => Test_Profile);
-         end;
-      elsif Arguments_Count = 3 and then
-            Arguments (2) = "--profile" and then
-            Arguments (3) /= "debug" and then
-            Arguments (3) /= "release"
-      then
-         return (Kind => Invalid_Profile,
-                 Unknown_Name => To_Unbounded_String (Arguments (3)));
+         return (Status => Error,
+                 Message => To_Unbounded_String ("missing profile"));
       else
-         return (Kind => Invalid_Command,
-                 Unknown_Name => To_Unbounded_String (Arguments (1)));
+         if Arguments (2) /= "--profile" then
+            return (Status => Error,
+                    Message => To_Unbounded_String ("unexpected option '" & Arguments (2) & "'"));
+         end if;
+
+         begin
+            return (Status => Ok,
+                    Value => Profile_Kind'Value (Arguments (3)));
+         exception
+            when Constraint_Error =>
+               return (Status => Error,
+                       Message => To_Unbounded_String ("invalid profile '" & Arguments (3) & "'"));
+         end;
       end if;
-   end From;
+   end Parse_Profile;
+
+   function Parse (Arguments : CL_Arguments.Argument_List.Vector)
+     return Command_Results.Result
+   is
+      use Command_Results;
+      use Profile_Results;
+
+      Arguments_Count : constant Natural := Natural (Arguments.Length);
+   begin
+      if Arguments_Count = 0 then
+         return (Status => Ok,
+                 Value => (Kind => Help));
+      end if;
+
+      declare
+         Kind : Command_Kind;
+      begin
+         Kind := Command_Kind'Value (Arguments (1));
+
+         case Kind is
+            when Help =>
+               return (Status => Ok,
+                       Value => (Kind => Help));
+            when Clean =>
+               return (Status => Ok,
+                       Value => (Kind => Clean));
+            when Build =>
+               declare
+                  Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
+               begin
+                  if Profile.Status = Ok then
+                     return (Status => Ok,
+                             Value => (Kind => Build,
+                                       Profile => Profile.Value));
+                  else
+                     return (Status => Error,
+                             Message => Profile.Message);
+                  end if;
+               end;
+            when Test =>
+               declare
+                  Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
+               begin
+                  if Profile.Status = Ok then
+                     return (Status => Ok,
+                             Value => (Kind => Test,
+                                       Profile => Profile.Value));
+                  else
+                     return (Status => Error,
+                             Message => Profile.Message);
+                  end if;
+               end;
+         end case;
+      exception
+         when Constraint_Error =>
+            return (Status => Error,
+                    Message => To_Unbounded_String ("unknown command '" & Arguments (1) & "'"));
+      end;
+   end Parse;
 
    function In_Project_Root return Boolean is
       use type Ada.Directories.File_Kind;
@@ -178,20 +215,6 @@ package body Tada.Commands is
       Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find executable `" & Exec_Name & "` in PATH");
    end Print_Exec_Not_Found;
 
-   procedure Print_Unknown_Command (Command_Name : String) is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "tada: unknown command '" & Command_Name & "'");
-      Text_IO.New_Line (Text_IO.Standard_Error);
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Run 'tada help' for usage.");
-   end Print_Unknown_Command;
-
-   procedure Print_Invalid_Profile (Profile_Name : String) is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "tada: invalid profile '" & Profile_Name & "'");
-      Text_IO.New_Line (Text_IO.Standard_Error);
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Run 'tada help' for usage.");
-   end Print_Invalid_Profile;
-
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
@@ -259,14 +282,6 @@ package body Tada.Commands is
             end if;
          when Help =>
             Print_Usage;
-         when Invalid_Command =>
-            Print_Unknown_Command (To_String (Cmd.Unknown_Name));
-            Command_Line.Set_Exit_Status (Command_Line.Failure);
-            return;
-         when Invalid_Profile =>
-            Print_Invalid_Profile (To_String (Cmd.Unknown_Name));
-            Command_Line.Set_Exit_Status (Command_Line.Failure);
-            return;
       end case;
    end Execute;
 end Tada.Commands;
