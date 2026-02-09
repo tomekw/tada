@@ -222,19 +222,29 @@ package body Tada.Commands is
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
-         when Build =>
+         when Help =>
+            null;
+         when Build | Clean | Test =>
             if not In_Project_Root then
                Print_Not_In_Project_Root;
                Command_Line.Set_Exit_Status (Command_Line.Failure);
                return;
             end if;
+      end case;
 
+      case Cmd.Kind is
+         when Help | Clean =>
+            null;
+         when Build | Test =>
             if not Exec_On_Path ("gprbuild") then
                Print_Exec_Not_Found ("gprbuild");
                Command_Line.Set_Exit_Status (Command_Line.Failure);
                return;
             end if;
+      end case;
 
+      case Cmd.Kind is
+         when Build =>
             declare
                Project_Name : constant String := Read_Project_Name;
             begin
@@ -244,18 +254,6 @@ package body Tada.Commands is
                end if;
             end;
          when Test =>
-            if not In_Project_Root then
-               Print_Not_In_Project_Root;
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
-            end if;
-
-            if not Exec_On_Path ("gprbuild") then
-               Print_Exec_Not_Found ("gprbuild");
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
-            end if;
-
             declare
                Project_Name : constant String := Read_Project_Name;
             begin
@@ -270,12 +268,6 @@ package body Tada.Commands is
                end if;
             end;
          when Clean =>
-            if not In_Project_Root then
-               Print_Not_In_Project_Root;
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
-            end if;
-
             if Directories.Exists ("target") then
                Text_IO.Put_Line ("Removing target/");
                Directories.Delete_Tree ("target");
