@@ -38,8 +38,16 @@ package body Tada.Commands is
          begin
             return (Kind => Build, Profile => Build_Profile);
          end;
+      elsif Arguments_Count = 3 and then
+            Arguments (2) = "--profile" and then
+            Arguments (3) /= "debug" and then
+            Arguments (3) /= "release"
+      then
+         return (Kind => Invalid_Profile,
+                 Unknown_Name => To_Unbounded_String (Arguments (3)));
       else
-         return (Kind => Invalid, Unknown_Name => To_Unbounded_String (Arguments (1)));
+         return (Kind => Invalid_Command,
+                 Unknown_Name => To_Unbounded_String (Arguments (1)));
       end if;
    end From;
 
@@ -150,6 +158,13 @@ package body Tada.Commands is
       Text_IO.Put_Line (Text_IO.Standard_Error, "Run 'tada help' for usage.");
    end Print_Unknown_Command;
 
+   procedure Print_Invalid_Profile (Profile_Name : String) is
+   begin
+      Text_IO.Put_Line (Text_IO.Standard_Error, "tada: invalid profile '" & Profile_Name & "'");
+      Text_IO.New_Line (Text_IO.Standard_Error);
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Run 'tada help' for usage.");
+   end Print_Invalid_Profile;
+
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
@@ -189,8 +204,12 @@ package body Tada.Commands is
             end if;
          when Help =>
             Print_Usage;
-         when Invalid =>
+         when Invalid_Command =>
             Print_Unknown_Command (To_String (Cmd.Unknown_Name));
+            Command_Line.Set_Exit_Status (Command_Line.Failure);
+            return;
+         when Invalid_Profile =>
+            Print_Invalid_Profile (To_String (Cmd.Unknown_Name));
             Command_Line.Set_Exit_Status (Command_Line.Failure);
             return;
       end case;

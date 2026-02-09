@@ -7,7 +7,8 @@ package Tada.Commands is
    type Command_Kind is (Build,
                          Clean,
                          Help,
-                         Invalid);
+                         Invalid_Command,
+                         Invalid_Profile);
 
    type Profile_Kind is (Debug,
                          Release);
@@ -18,7 +19,7 @@ package Tada.Commands is
             Profile : Profile_Kind;
          when Clean | Help =>
             null;
-         when Invalid =>
+         when Invalid_Command | Invalid_Profile =>
             Unknown_Name : Unbounded_String;
       end case;
    end record;
