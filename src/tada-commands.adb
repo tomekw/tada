@@ -12,10 +12,45 @@ package body Tada.Commands is
 
    package OS renames GNAT.OS_Lib;
 
+   package Args_Results is new Results (CL_Arguments.Argument_List.Vector);
    package Profile_Results is new Results (Profile_Kind);
 
    function Image (P : Profile_Kind) return String is
      (Characters.Handling.To_Lower (Profile_Kind'Image (P)));
+
+   function Parse_Args (Arguments : CL_Arguments.Argument_List.Vector)
+     return Args_Results.Result
+   is
+      use Args_Results;
+
+      Arguments_Count : constant Natural := Natural (Arguments.Length);
+
+      Args : CL_Arguments.Argument_List.Vector;
+
+      function Find_Args_Separator return Natural is
+      begin
+         for I in 1 .. Arguments_Count loop
+            if Arguments (I) = "--" then
+               return I;
+            end if;
+         end loop;
+         return 0;
+      end Find_Args_Separator;
+
+      Args_Separator : constant Natural := Find_Args_Separator;
+   begin
+      if Args_Separator = Arguments_Count then
+         return (Status => Error,
+                 Message => To_Unbounded_String ("missing args"));
+      elsif Args_Separator /= 0 then
+         for I in Args_Separator + 1 .. Arguments_Count loop
+            Args.Append (Arguments (I));
+         end loop;
+      end if;
+
+      return (Status => Ok,
+              Value => Args);
+   end Parse_Args;
 
    function Parse_Profile (Arguments : CL_Arguments.Argument_List.Vector)
      return Profile_Results.Result
@@ -25,6 +60,9 @@ package body Tada.Commands is
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
       if Arguments_Count < 2 then
+         return (Status => Ok,
+                 Value => Debug);
+      elsif Arguments (2) = "--" then
          return (Status => Ok,
                  Value => Debug);
       elsif Arguments_Count = 2 and then
@@ -52,6 +90,7 @@ package body Tada.Commands is
    function Parse (Arguments : CL_Arguments.Argument_List.Vector)
      return Command_Results.Result
    is
+      use Args_Results;
       use Command_Results;
       use Profile_Results;
 
@@ -98,6 +137,29 @@ package body Tada.Commands is
                   else
                      return (Status => Error,
                              Message => Profile.Message);
+                  end if;
+               end;
+            when Run =>
+               declare
+                  Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
+                  Args : constant Args_Results.Result := Parse_Args (Arguments);
+               begin
+                  if Profile.Status = Ok and then
+                     Args.Status = Ok
+                  then
+                     return (Status => Ok,
+                             Value => (Kind => Run,
+                                       Run_Profile => Profile.Value,
+                                       Args => Args.Value));
+                  elsif Profile.Status = Error then
+                     return (Status => Error,
+                             Message => Profile.Message);
+                  elsif Args.Status = Error then
+                     return (Status => Error,
+                             Message => Args.Message);
+                  else
+                     return (Status => Error,
+                             Message => Profile.Message & ", " & Args.Message);
                   end if;
                end;
          end case;
@@ -159,14 +221,32 @@ package body Tada.Commands is
          return False;
    end Execute_Build;
 
-   function Execute_Target (Name : String) return Boolean is
+   function Execute_Target (Name : String; Arguments : CL_Arguments.Argument_List.Vector)
+     return Boolean
+   is
       Result : Boolean := False;
+
+      Arguments_Count : constant Natural := Natural (Arguments.Length);
+
+      Args : OS.Argument_List (1 .. Arguments_Count);
    begin
-      OS.Spawn (Name, OS.Argument_List'(1 .. 0 => null), Result);
+      for I in 1 .. Arguments_Count loop
+         Args (I) := new String'(Arguments (I));
+      end loop;
+
+      OS.Spawn (Name, Args, Result);
+
+      for Arg of Args loop
+         OS.Free (Arg);
+      end loop;
 
       return Result;
    exception
       when others =>
+         for Arg of Args loop
+            OS.Free (Arg);
+         end loop;
+
          return False;
    end Execute_Target;
 
@@ -224,7 +304,7 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Help =>
             null;
-         when Build | Clean | Test =>
+         when Build | Clean | Test | Run =>
             if not In_Project_Root then
                Print_Not_In_Project_Root;
                Command_Line.Set_Exit_Status (Command_Line.Failure);
@@ -235,7 +315,7 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Help | Clean =>
             null;
-         when Build | Test =>
+         when Build | Test | Run =>
             if not Exec_On_Path ("gprbuild") then
                Print_Exec_Not_Found ("gprbuild");
                Command_Line.Set_Exit_Status (Command_Line.Failure);
@@ -256,13 +336,32 @@ package body Tada.Commands is
          when Test =>
             declare
                Project_Name : constant String := Read_Project_Name;
+               Empty_Args : CL_Arguments.Argument_List.Vector;
             begin
                if not Execute_Build (Project_Name & "_tests", Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               if not Execute_Target ("target/" & Image (Cmd.Profile) & "/bin/run_tests") then
+               if not Execute_Target ("target/" & Image (Cmd.Profile) & "/bin/run_tests",
+                                      Empty_Args)
+               then
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+            end;
+         when Run =>
+            declare
+               Project_Name : constant String := Read_Project_Name;
+            begin
+               if not Execute_Build (Project_Name, Image (Cmd.Run_Profile)) then
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+
+               if not Execute_Target ("target/" & Image (Cmd.Run_Profile) & "/bin/" & Project_Name,
+                                      Cmd.Args)
+               then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;

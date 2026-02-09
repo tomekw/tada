@@ -4,6 +4,7 @@ with Tada.Results;
 package Tada.Commands is
    type Command_Kind is (Build,
                          Test,
+                         Run,
                          Clean,
                          Help);
 
@@ -14,6 +15,9 @@ package Tada.Commands is
       case Kind is
          when Build | Test =>
             Profile : Profile_Kind;
+         when Run =>
+            Run_Profile : Profile_Kind;
+            Args : CL_Arguments.Argument_List.Vector;
          when Clean | Help =>
             null;
       end case;
