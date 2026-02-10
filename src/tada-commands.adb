@@ -1,19 +1,49 @@
 with Ada.Characters.Handling;
 with Ada.Command_Line;
+with Ada.Containers.Indefinite_Vectors;
 with Ada.Directories;
-with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
 package body Tada.Commands is
    use Ada;
-   use Ada.Strings.Unbounded;
 
    package OS renames GNAT.OS_Lib;
 
    package Args_Results is new Results (CL_Arguments.Argument_List.Vector);
    package Profile_Results is new Results (Profile_Kind);
+   package Project_Name_Results is new Results (Unbounded_String);
+   package Project_Type_Results is new Results (Project_Kind);
+
+   package String_Vectors is new Containers.Indefinite_Vectors
+     (Index_Type   => Positive,
+      Element_Type => String);
+
+   Reserved_Words : constant String_Vectors.Vector :=
+     ["abort", "abs", "abstract", "accept", "access", "aliased", "all", "and", "array", "at",
+       "begin", "body",
+       "case", "constant",
+       "declare", "delay", "delta", "digits", "do",
+       "else", "elsif", "end", "entry", "exception",
+       "exit",
+       "for", "function",
+       "generic", "goto",
+       "if", "in", "interface", "is",
+       "limited", "loop",
+       "mod",
+       "new", "not", "null",
+       "of", "or", "others", "out", "overriding",
+       "package", "parallel", "pragma", "private",
+       "procedure", "protected",
+       "raise", "range", "record", "rem", "renames",
+       "requeue", "return", "reverse",
+       "select", "separate", "some", "subtype",
+       "synchronized",
+       "tagged", "task", "terminate", "then", "type",
+       "until", "use",
+       "when", "while", "with",
+       "xor"];
 
    function Image (P : Profile_Kind) return String is
      (Characters.Handling.To_Lower (Profile_Kind'Image (P)));
@@ -51,6 +81,98 @@ package body Tada.Commands is
       return (Status => Ok,
               Value => Args);
    end Parse_Args;
+
+   function Is_Reserved_Word (Name : String) return Boolean is
+      use Ada.Characters.Handling;
+
+      Lower_Name : constant String := To_Lower (Name);
+   begin
+      for Word of Reserved_Words loop
+         if Lower_Name = Word then
+            return True;
+         end if;
+      end loop;
+
+      return False;
+   end Is_Reserved_Word;
+
+   function Valid_Project_Name (Name : String) return Boolean is
+      use Characters.Handling;
+
+      Underscore : constant Character := '_';
+   begin
+      if Name'Length = 0 or else
+         not Is_Letter (Name (Name'First)) or else
+         not Is_Alphanumeric (Name (Name'Last)) or else
+         Is_Reserved_Word (Name)
+      then
+         return False;
+      else
+         for I in Name'First .. Name'Last - 1 loop
+            if not (Is_Alphanumeric (Name (I)) or else
+                    Name (I) = Underscore)
+            then
+               return False;
+            end if;
+
+            if Name (I) = Underscore and then
+               Name (I + 1) = Underscore
+            then
+               return False;
+            end if;
+         end loop;
+      end if;
+
+      return True;
+   end Valid_Project_Name;
+
+   function Parse_Project_Name (Arguments : CL_Arguments.Argument_List.Vector)
+     return Project_Name_Results.Result
+   is
+      use Project_Name_Results;
+
+      Arguments_Count : constant Natural := Natural (Arguments.Length);
+   begin
+      if Arguments_Count = 1 then
+         return (Status => Error,
+                 Message => To_Unbounded_String ("missing project name"));
+      else
+         declare
+            Project_Name : constant String := Characters.Handling.To_Lower (Arguments (2));
+         begin
+            if Valid_Project_Name (Project_Name) then
+               return (Status => Ok,
+                       Value => To_Unbounded_String (Project_Name));
+            else
+               return (Status => Error,
+                       Message => To_Unbounded_String ("invalid project name '" & Arguments (2) & "'"));
+            end if;
+         end;
+      end if;
+   end Parse_Project_Name;
+
+   function Parse_Project_Type (Arguments : CL_Arguments.Argument_List.Vector)
+     return Project_Type_Results.Result
+   is
+      use Project_Type_Results;
+
+      Arguments_Count : constant Natural := Natural (Arguments.Length);
+   begin
+      if Arguments_Count < 3 then
+         return (Status => Ok,
+                 Value => Exe);
+      elsif Arguments (3) = "--exe"
+      then
+         return (Status => Ok,
+                 Value => Exe);
+      elsif Arguments (3) = "--lib" then
+         return (Status => Ok,
+                 Value => Lib);
+      else
+         return (Status => Error,
+                 Message => To_Unbounded_String ("invalid project type '" & Arguments (3) & "'"));
+      end if;
+   end Parse_Project_Type;
 
    function Parse_Profile (Arguments : CL_Arguments.Argument_List.Vector)
      return Profile_Results.Result
@@ -93,6 +215,8 @@ package body Tada.Commands is
       use Args_Results;
       use Command_Results;
       use Profile_Results;
+      use Project_Name_Results;
+      use Project_Type_Results;
 
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
@@ -113,6 +237,33 @@ package body Tada.Commands is
             when Clean =>
                return (Status => Ok,
                        Value => (Kind => Clean));
+            when Init =>
+               declare
+                  Project_Name : constant Project_Name_Results.Result := Parse_Project_Name (Arguments);
+                  Project_Type : constant Project_Type_Results.Result := Parse_Project_Type (Arguments);
+               begin
+                  if Project_Name.Status = Ok and then
+                     Project_Type.Status = Ok
+                  then
+                     return (Status => Ok,
+                             Value => (Kind => Init,
+                                       Project_Name => Project_Name.Value,
+                                       Project_Type => Project_Type.Value));
+                  elsif Project_Name.Status = Error and then
+                        Project_Type.Status = Error
+                  then
+                     return (Status => Error,
+                             Message => Project_Name.Message & ", " & Project_Type.Message);
+                  elsif Project_Name.Status = Error then
+                     return (Status => Error,
+                             Message => Project_Name.Message);
+                  elsif Project_Type.Status = Error then
+                     return (Status => Error,
+                             Message => Project_Type.Message);
+                  end if;
+
+                  raise Program_Error with "unreachable";
+               end;
             when Build =>
                declare
                   Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
@@ -151,16 +302,20 @@ package body Tada.Commands is
                              Value => (Kind => Run,
                                        Run_Profile => Profile.Value,
                                        Args => Args.Value));
+                  elsif Profile.Status = Error and then
+                        Args.Status = Error
+                  then
+                     return (Status => Error,
+                             Message => Profile.Message & ", " & Args.Message);
                   elsif Profile.Status = Error then
                      return (Status => Error,
                              Message => Profile.Message);
                   elsif Args.Status = Error then
                      return (Status => Error,
                              Message => Args.Message);
-                  else
-                     return (Status => Error,
-                             Message => Profile.Message & ", " & Args.Message);
                   end if;
+
+                  raise Program_Error with "unreachable";
                end;
          end case;
       exception
@@ -302,7 +457,7 @@ package body Tada.Commands is
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
-         when Help =>
+         when Help | Init =>
             null;
          when Build | Clean | Test | Run =>
             if not In_Project_Root then
@@ -313,7 +468,7 @@ package body Tada.Commands is
       end case;
 
       case Cmd.Kind is
-         when Help | Clean =>
+         when Help | Clean | Init =>
             null;
          when Build | Test | Run =>
             if not Exec_On_Path ("gprbuild") then
@@ -366,6 +521,9 @@ package body Tada.Commands is
                   return;
                end if;
             end;
+         when Init =>
+            Text_IO.Put_Line (To_String (Cmd.Project_Name));
+            Text_IO.Put_Line (Cmd.Project_Type'Image);
          when Clean =>
             if Directories.Exists ("target") then
                Text_IO.Put_Line ("Removing target/");

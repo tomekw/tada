@@ -1,15 +1,23 @@
+with Ada.Strings.Unbounded;
+
 with Tada.CL_Arguments;
 with Tada.Results;
 
 package Tada.Commands is
+   use Ada.Strings.Unbounded;
+
    type Command_Kind is (Build,
                          Test,
                          Run,
+                         Init,
                          Clean,
                          Help);
 
    type Profile_Kind is (Debug,
                          Release);
+
+   type Project_Kind is (Exe,
+                         Lib);
 
    type Command (Kind : Command_Kind := Help) is record
       case Kind is
@@ -18,6 +26,9 @@ package Tada.Commands is
          when Run =>
             Run_Profile : Profile_Kind;
             Args : CL_Arguments.Argument_List.Vector;
+         when Init =>
+            Project_Name : Unbounded_String;
+            Project_Type : Project_Kind;
          when Clean | Help =>
             null;
       end case;
