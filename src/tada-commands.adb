@@ -6,6 +6,8 @@ with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
+with Tada.Templates;
+
 package body Tada.Commands is
    use Ada;
 
@@ -502,14 +504,20 @@ package body Tada.Commands is
             declare
                Project_Name : constant String := Read_Project_Name;
                Empty_Args : CL_Arguments.Argument_List.Vector;
+               Exec_Name : constant String :=
+                 Directories.Compose
+                   (Containing_Directory =>
+                      Directories.Compose
+                        (Directories.Compose ("target", Image (Cmd.Profile)),
+                         "bin"),
+                    Name => "run_tests");
             begin
                if not Execute_Build (Project_Name & "_tests", Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               if not Execute_Target ("target/" & Image (Cmd.Profile) & "/bin/run_tests",
-                                      Empty_Args)
+               if not Execute_Target (Exec_Name, Empty_Args)
                then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
@@ -518,14 +526,20 @@ package body Tada.Commands is
          when Run =>
             declare
                Project_Name : constant String := Read_Project_Name;
+               Exec_Name : constant String :=
+                 Directories.Compose
+                   (Containing_Directory =>
+                      Directories.Compose
+                        (Directories.Compose ("target", Image (Cmd.Run_Profile)),
+                         "bin"),
+                    Name => Project_Name);
             begin
                if not Execute_Build (Project_Name, Image (Cmd.Run_Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               if not Execute_Target ("target/" & Image (Cmd.Run_Profile) & "/bin/" & Project_Name,
-                                      Cmd.Args)
+               if not Execute_Target (Exec_Name, Cmd.Args)
                then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
@@ -537,38 +551,145 @@ package body Tada.Commands is
 
                New_Project_Name : constant String := To_String (Cmd.Project_Name);
             begin
-               if Directories.Exists (New_Project_Name) and then
-                  Directories.Kind (New_Project_Name) = Directories.Directory
+               if Exists (New_Project_Name) and then
+                  Kind (New_Project_Name) = Directory
                then
                   Print_Project_Name_Exists (New_Project_Name);
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               Directories.Create_Directory (New_Project_Name);
-               Directories.Create_Directory (Directories.Compose (New_Project_Name, "src"));
-               Directories.Create_Directory (Directories.Compose (New_Project_Name, "tests"));
+               Create_Directory (New_Project_Name);
+               Create_Directory (Compose (New_Project_Name, "src"));
+               Create_Directory (Compose (New_Project_Name, "tests"));
 
-               --  Create README.md
-               --  Create tada.md
-               --  Create PROJECT_config.gpr
-               --  Create PROJECT.gpr (depends on type --exe vs --lib)
-               --  Create PROJECT_tests.gpr
-               --
-               --  Create tests/run_tests.adb
-               --  Create tests/PROJECT_suite.ads
-               --  Create tests/PROJECT_suite.adb
-               --  Create tests/PROJECT_test.ads
-               --  Create tests/PROJECT_test.adb
-               --
-               --  if --exe
-               --  Create src/PROJECT.ads
-               --  Create src/PROJECT-main.ads
-               --  Create src/PROJECT-main.adb
-               --
-               --  if --lib
-               --  Create src/PROJECT.ads
-               --  Create src/PROJECT.adb
+               Set_Directory (New_Project_Name);
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, "README.md");
+                  Templates.Write_Readme (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, "tada.toml");
+                  Templates.Write_Manifest (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, ".gitignore");
+                  Templates.Write_Gitignore (F);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "_config.gpr");
+                  Templates.Write_GPR_Config (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & ".gpr");
+                  Templates.Write_GPR_Main (F, New_Project_Name, Cmd.Project_Type);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "_tests.gpr");
+                  Templates.Write_GPR_Tests (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               Set_Directory ("tests");
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, "run_tests.adb");
+                  Templates.Write_Test_Runner (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_suite.ads");
+                  Templates.Write_Test_Suite_Spec (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_suite.adb");
+                  Templates.Write_Test_Suite_Body (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_test.ads");
+                  Templates.Write_Test_Spec (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_test.adb");
+                  Templates.Write_Test_Body (F, New_Project_Name);
+                  Text_IO.Close (F);
+               end;
+
+               Set_Directory (Compose (Containing_Directory (Current_Directory), "src"));
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & ".ads");
+                  Templates.Write_Root_Package_Spec (F, New_Project_Name, Cmd.Project_Type);
+                  Text_IO.Close (F);
+               end;
+
+               case Cmd.Project_Type is
+                  when Exe =>
+                     declare
+                        F : Text_IO.File_Type;
+                     begin
+                        Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "-main.ads");
+                        Templates.Write_Main_Spec (F, New_Project_Name);
+                        Text_IO.Close (F);
+                     end;
+
+                     declare
+                        F : Text_IO.File_Type;
+                     begin
+                        Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "-main.adb");
+                        Templates.Write_Main_Body (F, New_Project_Name);
+                        Text_IO.Close (F);
+                     end;
+                  when Lib =>
+                     declare
+                        F : Text_IO.File_Type;
+                     begin
+                        Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & ".adb");
+                        Templates.Write_Root_Package_Body (F, New_Project_Name);
+                        Text_IO.Close (F);
+                     end;
+               end case;
             exception
                when Constraint_Error =>
                   Print_Something_Went_Wrong;
