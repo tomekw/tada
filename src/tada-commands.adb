@@ -50,6 +50,16 @@ package body Tada.Commands is
    function Image (P : Profile_Kind) return String is
      (Characters.Handling.To_Lower (Profile_Kind'Image (P)));
 
+   function Image (P : Project_Kind) return String is
+   begin
+      case P is
+         when Exe =>
+            return "executable";
+         when Lib =>
+            return "library";
+      end case;
+   end Image;
+
    function Parse_Args (Arguments : CL_Arguments.Argument_List.Vector)
      return Args_Results.Result
    is
@@ -558,6 +568,8 @@ package body Tada.Commands is
                New_Project_Name : constant String := To_String (Cmd.Project_Name);
                Root : constant String := Full_Name (New_Project_Name);
             begin
+               Text_IO.Put_Line ("Creating new project (" & Image(Cmd.Project_Type) & ")");
+
                if Exists (Root) then
                   Print_Project_Name_Exists (New_Project_Name);
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
