@@ -61,7 +61,8 @@ package body Tada.Commands is
 
       function Find_Args_Separator return Natural is
       begin
-         for I in 1 .. Arguments_Count loop
+         --  Arguments (1) is a command name
+         for I in 2 .. Arguments_Count loop
             if Arguments (I) = "--" then
                return I;
             end if;
@@ -230,7 +231,13 @@ package body Tada.Commands is
       declare
          Kind : Command_Kind;
       begin
-         Kind := Command_Kind'Value (Arguments (1));
+         begin
+            Kind := Command_Kind'Value (Arguments (1));
+         exception
+            when Constraint_Error =>
+               return (Status => Error,
+                       Message => To_Unbounded_String ("unknown command '" & Arguments (1) & "'"));
+         end;
 
          case Kind is
             when Help =>
@@ -320,10 +327,6 @@ package body Tada.Commands is
                   raise Program_Error with "unreachable";
                end;
          end case;
-      exception
-         when Constraint_Error =>
-            return (Status => Error,
-                    Message => To_Unbounded_String ("unknown command '" & Arguments (1) & "'"));
       end;
    end Parse;
 
@@ -503,21 +506,22 @@ package body Tada.Commands is
          when Test =>
             declare
                Project_Name : constant String := Read_Project_Name;
-               Empty_Args : CL_Arguments.Argument_List.Vector;
+               Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
                Exec_Name : constant String :=
                  Directories.Compose
                    (Containing_Directory =>
                       Directories.Compose
                         (Directories.Compose ("target", Image (Cmd.Profile)),
                          "bin"),
-                    Name => "run_tests");
+                    Name => "run_tests") & Exe_Suffix.all;
             begin
+               OS.Free (Exe_Suffix);
                if not Execute_Build (Project_Name & "_tests", Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               if not Execute_Target (Exec_Name, Empty_Args)
+               if not Execute_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
                then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
@@ -526,14 +530,16 @@ package body Tada.Commands is
          when Run =>
             declare
                Project_Name : constant String := Read_Project_Name;
+               Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
                Exec_Name : constant String :=
                  Directories.Compose
                    (Containing_Directory =>
                       Directories.Compose
                         (Directories.Compose ("target", Image (Cmd.Run_Profile)),
                          "bin"),
-                    Name => Project_Name);
+                    Name => Project_Name) & Exe_Suffix.all;
             begin
+               OS.Free (Exe_Suffix);
                if not Execute_Build (Project_Name, Image (Cmd.Run_Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
@@ -550,20 +556,19 @@ package body Tada.Commands is
                use Directories;
 
                New_Project_Name : constant String := To_String (Cmd.Project_Name);
+               Root : constant String := Full_Name (New_Project_Name);
             begin
-               if Exists (New_Project_Name) and then
-                  Kind (New_Project_Name) = Directory
-               then
+               if Exists (Root) then
                   Print_Project_Name_Exists (New_Project_Name);
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               Create_Directory (New_Project_Name);
-               Create_Directory (Compose (New_Project_Name, "src"));
-               Create_Directory (Compose (New_Project_Name, "tests"));
+               Create_Directory (Root);
+               Create_Directory (Compose (Root, "src"));
+               Create_Directory (Compose (Root, "tests"));
 
-               Set_Directory (New_Project_Name);
+               Set_Directory (Root);
                declare
                   F : Text_IO.File_Type;
                begin
@@ -612,7 +617,7 @@ package body Tada.Commands is
                   Text_IO.Close (F);
                end;
 
-               Set_Directory ("tests");
+               Set_Directory (Compose (Root, "tests"));
 
                declare
                   F : Text_IO.File_Type;
@@ -654,7 +659,7 @@ package body Tada.Commands is
                   Text_IO.Close (F);
                end;
 
-               Set_Directory (Compose (Containing_Directory (Current_Directory), "src"));
+               Set_Directory (Compose (Root, "src"));
 
                declare
                   F : Text_IO.File_Type;
@@ -691,10 +696,12 @@ package body Tada.Commands is
                      end;
                end case;
             exception
-               when Constraint_Error =>
+               when others =>
                   Print_Something_Went_Wrong;
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  Directories.Delete_Tree (New_Project_Name);
+
+                  Set_Directory (Containing_Directory (Root));
+                  Delete_Tree (Root);
             end;
          when Clean =>
             if Directories.Exists ("target") then

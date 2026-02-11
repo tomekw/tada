@@ -132,10 +132,8 @@ package body Tada.Templates is
         "      when ""debug""   => " &
         "Linker_Switches := ();");
       Put_Line (File,
-        "      when ""release"" =>");
-      Put_Line (File,
-        "         Linker_Switches := " &
-        "(""-Wl,--gc-sections"");");
+        "      when ""release"" => " &
+        "Linker_Switches := ();");
       Put_Line (File,
         "   end case;");
       Put_Line (File, "");

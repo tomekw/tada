@@ -28,8 +28,7 @@ abstract project Tada_Config is
    Linker_Switches := ();
    case Build_Profile is
       when "debug"   => Linker_Switches := ();
-      when "release" =>
-         Linker_Switches := ("-Wl,--gc-sections");
+      when "release"   => Linker_Switches := ();
    end case;
 
 end Tada_Config;
