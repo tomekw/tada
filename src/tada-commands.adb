@@ -454,6 +454,16 @@ package body Tada.Commands is
       Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find executable `" & Exec_Name & "` in PATH");
    end Print_Exec_Not_Found;
 
+   procedure Print_Project_Name_Exists (Project_Name : String) is
+   begin
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: project name `" & Project_Name & "` exists. Aborting.");
+   end Print_Project_Name_Exists;
+
+   procedure Print_Something_Went_Wrong is
+   begin
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: something went wrong. Aborting.");
+   end Print_Something_Went_Wrong;
+
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
@@ -522,8 +532,49 @@ package body Tada.Commands is
                end if;
             end;
          when Init =>
-            Text_IO.Put_Line (To_String (Cmd.Project_Name));
-            Text_IO.Put_Line (Cmd.Project_Type'Image);
+            declare
+               use Directories;
+
+               New_Project_Name : constant String := To_String (Cmd.Project_Name);
+            begin
+               if Directories.Exists (New_Project_Name) and then
+                  Directories.Kind (New_Project_Name) = Directories.Directory
+               then
+                  Print_Project_Name_Exists (New_Project_Name);
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+
+               Directories.Create_Directory (New_Project_Name);
+               Directories.Create_Directory (Directories.Compose (New_Project_Name, "src"));
+               Directories.Create_Directory (Directories.Compose (New_Project_Name, "tests"));
+
+               --  Create README.md
+               --  Create tada.md
+               --  Create PROJECT_config.gpr
+               --  Create PROJECT.gpr (depends on type --exe vs --lib)
+               --  Create PROJECT_tests.gpr
+               --
+               --  Create tests/run_tests.adb
+               --  Create tests/PROJECT_suite.ads
+               --  Create tests/PROJECT_suite.adb
+               --  Create tests/PROJECT_test.ads
+               --  Create tests/PROJECT_test.adb
+               --
+               --  if --exe
+               --  Create src/PROJECT.ads
+               --  Create src/PROJECT-main.ads
+               --  Create src/PROJECT-main.adb
+               --
+               --  if --lib
+               --  Create src/PROJECT.ads
+               --  Create src/PROJECT.adb
+            exception
+               when Constraint_Error =>
+                  Print_Something_Went_Wrong;
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  Directories.Delete_Tree (New_Project_Name);
+            end;
          when Clean =>
             if Directories.Exists ("target") then
                Text_IO.Put_Line ("Removing target/");
