@@ -4,45 +4,24 @@ with AUnit.Test_Cases; use AUnit.Test_Cases;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 with Tada.Commands; use Tada.Commands;
-with Tada.CL_Arguments;
+with Test_Helpers; use Test_Helpers;
 
 package body Parse_Project_Name_Tests is
 
-   use Command_Results;
-
-   package CL renames Tada.CL_Arguments;
-
-   procedure Assert_Parses_Ok
+   procedure Assert_Name_Ok
      (Input    : String;
       Expected : String;
       Label    : String)
    is
-      Arguments : constant CL.Argument_List.Vector :=
-        ["init", Input];
-      Cmd : constant Command_Results.Result :=
-        Parse (Arguments);
+      Cmd : constant Command :=
+        Parse_Ok (["init", Input], Label);
    begin
-      Assert (Cmd.Status = Ok,
-              Label & ": expected Ok");
-      Assert (Cmd.Value.Kind = Init,
+      Assert (Cmd.Kind = Init,
               Label & ": expected Init");
       Assert
-        (To_String (Cmd.Value.Project_Name) = Expected,
+        (To_String (Cmd.Project_Name) = Expected,
          Label & ": expected '" & Expected & "'");
-   end Assert_Parses_Ok;
-
-   procedure Assert_Parses_Error
-     (Input : String;
-      Label : String)
-   is
-      Arguments : constant CL.Argument_List.Vector :=
-        ["init", Input];
-      Cmd : constant Command_Results.Result :=
-        Parse (Arguments);
-   begin
-      Assert (Cmd.Status = Error,
-              Label & ": expected Error");
-   end Assert_Parses_Error;
+   end Assert_Name_Ok;
 
    overriding
    function Name
@@ -107,7 +86,7 @@ package body Parse_Project_Name_Tests is
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Ok
+      Assert_Name_Ok
         ("my_project", "my_project", "simple name");
    end Test_Valid_Simple_Name;
 
@@ -115,22 +94,23 @@ package body Parse_Project_Name_Tests is
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Ok
-        ("hello_world", "hello_world", "underscore name");
+      Assert_Name_Ok
+        ("hello_world", "hello_world",
+         "underscore name");
    end Test_Valid_Name_With_Underscore;
 
    procedure Test_Valid_Single_Letter
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Ok ("a", "a", "single letter");
+      Assert_Name_Ok ("a", "a", "single letter");
    end Test_Valid_Single_Letter;
 
    procedure Test_Valid_Name_Is_Lowercased
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Ok
+      Assert_Name_Ok
         ("MyProject", "myproject", "lowercased");
    end Test_Valid_Name_Is_Lowercased;
 
@@ -138,7 +118,7 @@ package body Parse_Project_Name_Tests is
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Ok
+      Assert_Name_Ok
         ("project1", "project1", "name with digits");
    end Test_Valid_Name_With_Digits;
 
@@ -146,34 +126,33 @@ package body Parse_Project_Name_Tests is
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Ok
+      Assert_Name_Ok
         ("a_b_c", "a_b_c", "multiple underscores");
    end Test_Valid_Multiple_Underscores;
 
    procedure Test_Missing_Name
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
-      Arguments : constant CL.Argument_List.Vector :=
-        ["init"];
-      Cmd : constant Command_Results.Result :=
-        Parse (Arguments);
    begin
-      Assert (Cmd.Status = Error,
-              "missing name: expected Error");
+      Assert_Parses_Error
+        (["init"], "missing name");
    end Test_Missing_Name;
 
    procedure Test_Empty_Name
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Error ("", "empty name");
+      Assert_Parses_Error
+        (["init", ""], "empty name");
    end Test_Empty_Name;
 
    procedure Test_Starts_With_Digit
      (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)
    is
    begin
-      Assert_Parses_Error ("123bad", "starts with digit");
+      Assert_Parses_Error
+        (["init", "123bad"],
+         "starts with digit");
    end Test_Starts_With_Digit;
 
    procedure Test_Starts_With_Underscore
@@ -181,7 +160,8 @@ package body Parse_Project_Name_Tests is
    is
    begin
       Assert_Parses_Error
-        ("_bad", "starts with underscore");
+        (["init", "_bad"],
+         "starts with underscore");
    end Test_Starts_With_Underscore;
 
    procedure Test_Ends_With_Underscore
@@ -189,7 +169,8 @@ package body Parse_Project_Name_Tests is
    is
    begin
       Assert_Parses_Error
-        ("bad_", "ends with underscore");
+        (["init", "bad_"],
+         "ends with underscore");
    end Test_Ends_With_Underscore;
 
    procedure Test_Double_Underscore
@@ -197,7 +178,8 @@ package body Parse_Project_Name_Tests is
    is
    begin
       Assert_Parses_Error
-        ("bad__name", "double underscore");
+        (["init", "bad__name"],
+         "double underscore");
    end Test_Double_Underscore;
 
    procedure Test_Reserved_Word
@@ -205,7 +187,8 @@ package body Parse_Project_Name_Tests is
    is
    begin
       Assert_Parses_Error
-        ("procedure", "reserved word");
+        (["init", "procedure"],
+         "reserved word");
    end Test_Reserved_Word;
 
    procedure Test_Reserved_Word_Mixed_Case
@@ -213,7 +196,8 @@ package body Parse_Project_Name_Tests is
    is
    begin
       Assert_Parses_Error
-        ("Procedure", "reserved word mixed case");
+        (["init", "Procedure"],
+         "reserved word mixed case");
    end Test_Reserved_Word_Mixed_Case;
 
    procedure Test_Special_Character
@@ -221,7 +205,8 @@ package body Parse_Project_Name_Tests is
    is
    begin
       Assert_Parses_Error
-        ("my-project", "special character (hyphen)");
+        (["init", "my-project"],
+         "special character (hyphen)");
    end Test_Special_Character;
 
 end Parse_Project_Name_Tests;
