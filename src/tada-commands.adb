@@ -1,11 +1,11 @@
 with Ada.Characters.Handling;
 with Ada.Command_Line;
-with Ada.Containers.Indefinite_Vectors;
 with Ada.Directories;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
+with Tada.Config;
 with Tada.Templates;
 
 package body Tada.Commands is
@@ -15,37 +15,7 @@ package body Tada.Commands is
 
    package Args_Results is new Results (CL_Arguments.Argument_List.Vector);
    package Profile_Results is new Results (Profile_Kind);
-   package Project_Name_Results is new Results (Unbounded_String);
    package Project_Type_Results is new Results (Project_Kind);
-
-   package String_Vectors is new Containers.Indefinite_Vectors
-     (Index_Type   => Positive,
-      Element_Type => String);
-
-   Reserved_Words : constant String_Vectors.Vector :=
-     ["abort", "abs", "abstract", "accept", "access", "aliased", "all", "and", "array", "at",
-       "begin", "body",
-       "case", "constant",
-       "declare", "delay", "delta", "digits", "do",
-       "else", "elsif", "end", "entry", "exception",
-       "exit",
-       "for", "function",
-       "generic", "goto",
-       "if", "in", "interface", "is",
-       "limited", "loop",
-       "mod",
-       "new", "not", "null",
-       "of", "or", "others", "out", "overriding",
-       "package", "parallel", "pragma", "private",
-       "procedure", "protected",
-       "raise", "range", "record", "rem", "renames",
-       "requeue", "return", "reverse",
-       "select", "separate", "some", "subtype",
-       "synchronized",
-       "tagged", "task", "terminate", "then", "type",
-       "until", "use",
-       "when", "while", "with",
-       "xor"];
 
    function Image (P : Profile_Kind) return String is
      (Characters.Handling.To_Lower (Profile_Kind'Image (P)));
@@ -95,54 +65,10 @@ package body Tada.Commands is
               Value => Args);
    end Parse_Args;
 
-   function Is_Reserved_Word (Name : String) return Boolean is
-      use Ada.Characters.Handling;
-
-      Lower_Name : constant String := To_Lower (Name);
-   begin
-      for Word of Reserved_Words loop
-         if Lower_Name = Word then
-            return True;
-         end if;
-      end loop;
-
-      return False;
-   end Is_Reserved_Word;
-
-   function Valid_Project_Name (Name : String) return Boolean is
-      use Characters.Handling;
-
-      Underscore : constant Character := '_';
-   begin
-      if Name'Length = 0 or else
-         not Is_Letter (Name (Name'First)) or else
-         not Is_Alphanumeric (Name (Name'Last)) or else
-         Is_Reserved_Word (Name)
-      then
-         return False;
-      else
-         for I in Name'First .. Name'Last - 1 loop
-            if not (Is_Alphanumeric (Name (I)) or else
-                    Name (I) = Underscore)
-            then
-               return False;
-            end if;
-
-            if Name (I) = Underscore and then
-               Name (I + 1) = Underscore
-            then
-               return False;
-            end if;
-         end loop;
-      end if;
-
-      return True;
-   end Valid_Project_Name;
-
    function Parse_Project_Name (Arguments : CL_Arguments.Argument_List.Vector)
-     return Project_Name_Results.Result
+     return Config.Project_Name_Results.Result
    is
-      use Project_Name_Results;
+      use Config.Project_Name_Results;
 
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
@@ -153,7 +79,7 @@ package body Tada.Commands is
          declare
             Project_Name : constant String := Characters.Handling.To_Lower (Arguments (2));
          begin
-            if Valid_Project_Name (Project_Name) then
+            if Config.Valid_Project_Name (Project_Name) then
                return (Status => Ok,
                        Value => To_Unbounded_String (Project_Name));
             else
@@ -228,7 +154,7 @@ package body Tada.Commands is
       use Args_Results;
       use Command_Results;
       use Profile_Results;
-      use Project_Name_Results;
+      use Config.Project_Name_Results;
       use Project_Type_Results;
 
       Arguments_Count : constant Natural := Natural (Arguments.Length);
@@ -261,7 +187,7 @@ package body Tada.Commands is
                        Value => (Kind => Version));
             when Init =>
                declare
-                  Project_Name : constant Project_Name_Results.Result := Parse_Project_Name (Arguments);
+                  Project_Name : constant Config.Project_Name_Results.Result := Parse_Project_Name (Arguments);
                   Project_Type : constant Project_Type_Results.Result := Parse_Project_Type (Arguments);
                begin
                   if Project_Name.Status = Ok and then
@@ -424,29 +350,21 @@ package body Tada.Commands is
    end Execute_Target;
 
    function Read_Project_Name return String is
-      File : Text_IO.File_Type;
-      Line : String (1 .. 256);
-      Last : Natural;
-      Prefix : constant String := "name = """;
-   begin
-      Text_IO.Open (File, Text_IO.In_File, "tada.toml");
-      Text_IO.Get_Line (File, Line, Last);
-      Text_IO.Close (File);
+      use Config;
+      use Config.Manifest_Results;
+      use Config.Project_Name_Results;
 
-      if Last > Prefix'Length + 1
-         and then Line (1 .. Prefix'Length) = Prefix
-         and then Line (Last) = '"'
-      then
-         return Line (Prefix'Length + 1 .. Last - 1);
-      else
-         raise Constraint_Error with "invalid tada.toml format";
-      end if;
-   exception
-      when others =>
-         if Text_IO.Is_Open (File) then
-            Text_IO.Close (File);
+      Manifest : constant Config.Manifest_Results.Result := Config.Parse ("tada.toml");
+   begin
+      if Manifest.Status = Manifest_Results.Ok then
+         if Manifest.Value.Name.Status = Project_Name_Results.Ok then
+            return To_String (Manifest.Value.Name.Value);
+         else
+            raise Constraint_Error with To_String (Manifest.Value.Name.Message);
          end if;
-         raise;
+      else
+         raise Constraint_Error with To_String (Manifest.Message);
+      end if;
    end Read_Project_Name;
 
    procedure Print_Usage is
