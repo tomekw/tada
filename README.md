@@ -20,18 +20,16 @@ sudo apt install gnat gprbuild libaunit-dev
 
 ## Installation
 
-Clone the repository and build:
+See [Releases](https://github.com/tomekw/tada/releases).
 
 ```bash
-git clone https://github.com/tomekw/tada.git
-cd tada
-gprbuild -P tada.gpr -XBUILD_PROFILE=release -p
+curl -L https://github.com/tomekw/tada/releases/download/VERSION/tada-VERSION-PLATFORM -o tada && chmod +x tada
 ```
 
-The binary is at `target/release/bin/tada`. Copy it somewhere on your `PATH`:
+Copy it somewhere on your `PATH`:
 
 ```bash
-cp target/release/bin/tada ~/.local/bin/
+cp tada ~/.local/bin/
 ```
 
 Once installed, Tada can build itself:
