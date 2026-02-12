@@ -15,7 +15,8 @@ package Tada.Commands is
                          Run,
                          Init,
                          Clean,
-                         Help);
+                         Help,
+                         Version);
 
    --  Build optimization profile.
    type Profile_Kind is (Debug,
@@ -36,7 +37,7 @@ package Tada.Commands is
          when Init =>
             Project_Name : Unbounded_String;
             Project_Type : Project_Kind;
-         when Clean | Help =>
+         when Clean | Help | Version =>
             null;
       end case;
    end record;

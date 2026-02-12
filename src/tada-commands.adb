@@ -256,6 +256,9 @@ package body Tada.Commands is
             when Clean =>
                return (Status => Ok,
                        Value => (Kind => Clean));
+            when Version =>
+               return (Status => Ok,
+                       Value => (Kind => Version));
             when Init =>
                declare
                   Project_Name : constant Project_Name_Results.Result := Parse_Project_Name (Arguments);
@@ -457,6 +460,7 @@ package body Tada.Commands is
       Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
       Text_IO.Put_Line ("    help                                Show this message");
+      Text_IO.Put_Line ("    version                             Display version");
    end Print_Usage;
 
    procedure Print_Not_In_Project_Root is
@@ -482,7 +486,7 @@ package body Tada.Commands is
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
-         when Help | Init =>
+         when Help | Init | Version =>
             null;
          when Build | Clean | Test | Run =>
             if not In_Project_Root then
@@ -493,7 +497,7 @@ package body Tada.Commands is
       end case;
 
       case Cmd.Kind is
-         when Help | Clean | Init =>
+         when Help | Clean | Init | Version =>
             null;
          when Build | Test | Run =>
             if not Exec_On_Path ("gprbuild") then
@@ -722,6 +726,8 @@ package body Tada.Commands is
             end if;
          when Help =>
             Print_Usage;
+         when Version =>
+            Text_IO.Put_Line (Tada.Version);
       end case;
    end Execute;
 end Tada.Commands;
