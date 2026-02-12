@@ -114,7 +114,8 @@ package body Tada.Config is
                     (Line (Eq_Position + 1 .. Line'Last), Strings.Both);
                   Value : constant String := Raw_Value (Raw_Value'First + 1 .. Raw_Value'Last - 1);
                begin
-                  if Raw_Value (Raw_Value'First) /= '"' or else
+                  if Raw_Value'Length < 2 or else
+                     Raw_Value (Raw_Value'First) /= '"' or else
                      Raw_Value (Raw_Value'Last) /= '"'
                   then
                      Text_IO.Close (Manifest_File);

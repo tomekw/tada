@@ -356,12 +356,17 @@ package body Tada.Commands is
    function Read_Project_Name return Project_Name_Results.Result is
       Manifest : constant Config.Manifest_Results.Result := Config.Parse ("tada.toml");
    begin
-      if Manifest.Status = Manifest_Results.Ok then
-         return Manifest.Value.Name;
-      else
+      if Manifest.Status /= Manifest_Results.Ok then
          return (Status => Project_Name_Results.Error,
                  Message => Manifest.Message);
       end if;
+
+      if Manifest.Value.Name.Status /= Project_Name_Results.Ok then
+         return (Status => Project_Name_Results.Error,
+                 Message => To_Unbounded_String ("invalid 'name' in tada.toml"));
+      end if;
+
+      return Manifest.Value.Name;
    end Read_Project_Name;
 
    procedure Print_Usage is
@@ -402,6 +407,23 @@ package body Tada.Commands is
    begin
       Text_IO.Put_Line (Text_IO.Standard_Error, "Error: something went wrong. Aborting.");
    end Print_Something_Went_Wrong;
+
+   function Get_Exe_Suffix return String is
+      Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
+      Result : constant String := Suffix.all;
+   begin
+      OS.Free (Suffix);
+      return Result;
+   end Get_Exe_Suffix;
+
+   function Target_Bin_Path (Profile : String; Name : String) return String is
+   begin
+      return Directories.Compose
+        (Containing_Directory =>
+           Directories.Compose
+             (Directories.Compose ("target", Profile), "bin"),
+         Name => Name) & Get_Exe_Suffix;
+   end Target_Bin_Path;
 
    procedure Execute (Cmd : Command) is
    begin
@@ -446,17 +468,8 @@ package body Tada.Commands is
          when Test =>
             declare
                Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
-               Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
-               Exec_Name : constant String :=
-                 Directories.Compose
-                   (Containing_Directory =>
-                      Directories.Compose
-                        (Directories.Compose ("target", Image (Cmd.Profile)),
-                         "bin"),
-                    Name => "run_tests") & Exe_Suffix.all;
+               Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Profile), "run_tests");
             begin
-               OS.Free (Exe_Suffix);
-
                if Project_Name.Status /= Project_Name_Results.Ok then
                   Print_Invalid_Project_Name (To_String (Project_Name.Message));
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
@@ -490,19 +503,9 @@ package body Tada.Commands is
                end if;
 
                declare
-                  Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
-                  Exec_Name : constant String :=
-                    Directories.Compose
-                      (Containing_Directory =>
-                         Directories.Compose
-                           (Directories.Compose ("target", Image (Cmd.Run_Profile)),
-                            "bin"),
-                       Name => To_String (Project_Name.Value)) & Exe_Suffix.all;
+                  Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), To_String (Project_Name.Value));
                begin
-                  OS.Free (Exe_Suffix);
-
-                  if not Execute_Target (Exec_Name, Cmd.Args)
-                  then
+                  if not Execute_Target (Exec_Name, Cmd.Args) then
                      Command_Line.Set_Exit_Status (Command_Line.Failure);
                      return;
                   end if;
