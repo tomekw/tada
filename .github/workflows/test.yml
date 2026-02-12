@@ -1,0 +1,33 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: debian:trixie
+    container:
+      image: debian:trixie
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            gnat gprbuild libaunit-dev curl ca-certificates git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tada
+        run: |
+          curl -fsSL \
+            https://github.com/tomekw/tada/releases/download/v0.1.0/tada-0.1.0-linux-x86_64 \
+            -o /usr/local/bin/tada
+          chmod +x /usr/local/bin/tada
+
+      - name: Run tests
+        run: tada test --profile release
