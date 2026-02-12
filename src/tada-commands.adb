@@ -568,7 +568,7 @@ package body Tada.Commands is
                New_Project_Name : constant String := To_String (Cmd.Project_Name);
                Root : constant String := Full_Name (New_Project_Name);
             begin
-               Text_IO.Put_Line ("Creating new project (" & Image(Cmd.Project_Type) & ")");
+               Text_IO.Put_Line ("Creating new project (" & Image (Cmd.Project_Type) & ")");
 
                if Exists (Root) then
                   Print_Project_Name_Exists (New_Project_Name);
