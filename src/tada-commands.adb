@@ -349,21 +349,18 @@ package body Tada.Commands is
          return False;
    end Execute_Target;
 
-   function Read_Project_Name return String is
-      use Config;
-      use Config.Manifest_Results;
-      use Config.Project_Name_Results;
+   use Config;
+   use Config.Manifest_Results;
+   use Config.Project_Name_Results;
 
+   function Read_Project_Name return Project_Name_Results.Result is
       Manifest : constant Config.Manifest_Results.Result := Config.Parse ("tada.toml");
    begin
       if Manifest.Status = Manifest_Results.Ok then
-         if Manifest.Value.Name.Status = Project_Name_Results.Ok then
-            return To_String (Manifest.Value.Name.Value);
-         else
-            raise Constraint_Error with To_String (Manifest.Value.Name.Message);
-         end if;
+         return Manifest.Value.Name;
       else
-         raise Constraint_Error with To_String (Manifest.Message);
+         return (Status => Project_Name_Results.Error,
+                 Message => Manifest.Message);
       end if;
    end Read_Project_Name;
 
@@ -395,6 +392,11 @@ package body Tada.Commands is
    begin
       Text_IO.Put_Line (Text_IO.Standard_Error, "Error: project name `" & Project_Name & "` exists. Aborting.");
    end Print_Project_Name_Exists;
+
+   procedure Print_Invalid_Project_Name (Message : String) is
+   begin
+      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: " & Message & ". Aborting.");
+   end Print_Invalid_Project_Name;
 
    procedure Print_Something_Went_Wrong is
    begin
@@ -428,16 +430,22 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Build =>
             declare
-               Project_Name : constant String := Read_Project_Name;
+               Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
             begin
-               if not Execute_Build (Project_Name, Image (Cmd.Profile)) then
+               if Project_Name.Status /= Project_Name_Results.Ok then
+                  Print_Invalid_Project_Name (To_String (Project_Name.Message));
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+
+               if not Execute_Build (To_String (Project_Name.Value), Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
             end;
          when Test =>
             declare
-               Project_Name : constant String := Read_Project_Name;
+               Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
                Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
                Exec_Name : constant String :=
                  Directories.Compose
@@ -448,7 +456,14 @@ package body Tada.Commands is
                     Name => "run_tests") & Exe_Suffix.all;
             begin
                OS.Free (Exe_Suffix);
-               if not Execute_Build (Project_Name & "_tests", Image (Cmd.Profile)) then
+
+               if Project_Name.Status /= Project_Name_Results.Ok then
+                  Print_Invalid_Project_Name (To_String (Project_Name.Message));
+                  Command_Line.Set_Exit_Status (Command_Line.Failure);
+                  return;
+               end if;
+
+               if not Execute_Build (To_String (Project_Name.Value) & "_tests", Image (Cmd.Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
@@ -461,27 +476,37 @@ package body Tada.Commands is
             end;
          when Run =>
             declare
-               Project_Name : constant String := Read_Project_Name;
-               Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
-               Exec_Name : constant String :=
-                 Directories.Compose
-                   (Containing_Directory =>
-                      Directories.Compose
-                        (Directories.Compose ("target", Image (Cmd.Run_Profile)),
-                         "bin"),
-                    Name => Project_Name) & Exe_Suffix.all;
+               Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
             begin
-               OS.Free (Exe_Suffix);
-               if not Execute_Build (Project_Name, Image (Cmd.Run_Profile)) then
+               if Project_Name.Status /= Project_Name_Results.Ok then
+                  Print_Invalid_Project_Name (To_String (Project_Name.Message));
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
 
-               if not Execute_Target (Exec_Name, Cmd.Args)
-               then
+               if not Execute_Build (To_String (Project_Name.Value), Image (Cmd.Run_Profile)) then
                   Command_Line.Set_Exit_Status (Command_Line.Failure);
                   return;
                end if;
+
+               declare
+                  Exe_Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
+                  Exec_Name : constant String :=
+                    Directories.Compose
+                      (Containing_Directory =>
+                         Directories.Compose
+                           (Directories.Compose ("target", Image (Cmd.Run_Profile)),
+                            "bin"),
+                       Name => To_String (Project_Name.Value)) & Exe_Suffix.all;
+               begin
+                  OS.Free (Exe_Suffix);
+
+                  if not Execute_Target (Exec_Name, Cmd.Args)
+                  then
+                     Command_Line.Set_Exit_Status (Command_Line.Failure);
+                     return;
+                  end if;
+               end;
             end;
          when Init =>
             declare

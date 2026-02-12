@@ -100,19 +100,21 @@ package body Tada.Config is
 
       while not Text_IO.End_Of_File (Manifest_File) loop
          declare
-            Line : constant String := Text_IO.Get_Line (Manifest_File);
+            Line : constant String := Strings.Fixed.Trim (Text_IO.Get_Line (Manifest_File), Strings.Both);
+            Eq_Position : constant Natural := Strings.Fixed.Index (Line, Eq);
          begin
-            if Line'Length > 0 then
+            if Line'Length > 0 and then
+               Eq_Position > 0
+            then
                declare
-                  Eq_Position : constant Natural := Strings.Fixed.Index (Line, Eq);
                   Key : constant String := Characters.Handling.To_Lower
                     (Strings.Fixed.Trim
                       (Line (Line'First .. Eq_Position - 1), Strings.Both));
                   Raw_Value : constant String := Strings.Fixed.Trim
-                    (Line (Eq_Position + 1 .. Line'Length), Strings.Both);
-                  Value : constant String := Raw_Value (Raw_Value'First + 1 .. Raw_Value'Length - 1);
+                    (Line (Eq_Position + 1 .. Line'Last), Strings.Both);
+                  Value : constant String := Raw_Value (Raw_Value'First + 1 .. Raw_Value'Last - 1);
                begin
-                  if Raw_Value (Raw_Value'First) /= '"' and then
+                  if Raw_Value (Raw_Value'First) /= '"' or else
                      Raw_Value (Raw_Value'Last) /= '"'
                   then
                      Text_IO.Close (Manifest_File);
@@ -129,7 +131,7 @@ package body Tada.Config is
                         Text_IO.Close (Manifest_File);
                         return (Status => Error,
                                 Message => To_Unbounded_String
-                                  ("unknown manifest key '" & Key & "'"));
+                                  ("invalid project name '" & Value & "'"));
                      end if;
                   elsif Key = "version" then
                      Project_Version := (Status => Project_Version_Results.Ok,
@@ -150,5 +152,14 @@ package body Tada.Config is
       return (Status => Ok,
               Value => (Name => Project_Name,
                         Version => Project_Version));
+   exception
+      when others =>
+         if Text_IO.Is_Open (Manifest_File) then
+            Text_IO.Close (Manifest_File);
+         end if;
+
+         return (Status => Error,
+                 Message => To_Unbounded_String
+                   ("invalid manifest file"));
    end Parse;
 end Tada.Config;

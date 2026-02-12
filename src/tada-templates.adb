@@ -42,6 +42,7 @@ package body Tada.Templates is
    is
    begin
       Put_Line (File, "name = """ & Name & """");
+      Put_Line (File, "version = ""0.1.0""");
    end Write_Manifest;
 
    ----------------------
@@ -215,7 +216,7 @@ package body Tada.Templates is
 
          when Commands.Lib =>
             Put_Line (File,
-              "   for Library_Name use """ & MC & """;");
+              "   for Library_Name use """ & Name & """;");
             Put_Line (File,
               "   for Library_Dir use ""lib"";");
             Put_Line (File,
