@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: debian:trixie
+    runs-on: ubuntu-latest
     container:
       image: debian:trixie
 
@@ -25,7 +25,7 @@ jobs:
       - name: Install tada
         run: |
           curl -fsSL \
-            https://github.com/tomekw/tada/releases/download/v0.1.0/tada-0.1.0-linux-x86_64 \
+            https://github.com/tomekw/tada/releases/download/v0.2.0/tada-0.2.0-linux-x86_64 \
             -o /usr/local/bin/tada
           chmod +x /usr/local/bin/tada
 
