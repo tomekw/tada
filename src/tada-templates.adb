@@ -218,7 +218,8 @@ package body Tada.Templates is
             Put_Line (File,
               "   for Library_Name use """ & Name & """;");
             Put_Line (File,
-              "   for Library_Dir use ""lib"";");
+              "   for Library_Dir use ""target/"" & " &
+              MC & "_Config.Build_Profile & ""/lib"";");
             Put_Line (File,
               "   for Library_Kind use ""static"";");
             Put_Line (File, "");
