@@ -1,4 +1,4 @@
-# Tada
+# Tada [![Tests](https://github.com/tomekw/tada/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/tomekw/tada/actions/workflows/test.yml)
 
 Abracadabra was too long. Tomek's Ada, too obvious. An opinionated project management tool for Ada.
 
