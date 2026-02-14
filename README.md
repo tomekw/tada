@@ -89,6 +89,12 @@ Tada's own test suite uses AUnit:
 tada test
 ```
 
+## Roadmap
+
+- [ ] local dependencies
+- [ ] git dependencies
+- [ ] dependencies index (?)
+
 ## License
 
 [MIT](LICENSE)
