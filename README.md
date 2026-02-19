@@ -6,6 +6,12 @@ Tada handles building, testing, and running Ada projects. It wraps GPRbuild
 with sensible defaults and a simple project manifest (`tada.toml`), so you
 spend less time writing build scripts and more time writing Ada.
 
+## Status
+
+This is alpha software. I'm actively working it. YMMV.
+
+Tested on Linux x86_64, MacOS ARM and Windows x86_64.
+
 ## Prerequisites
 
 ### Debian / Ubuntu
