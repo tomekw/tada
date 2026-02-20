@@ -1,5 +1,7 @@
 ## unreleased
 
+* breaking: change `tada.toml` format
+
 ## 0.2.0
 
 * paramatrize `Library_Dir` with build profile

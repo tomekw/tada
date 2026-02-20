@@ -1,9 +1,9 @@
 # Tada [![Tests](https://github.com/tomekw/tada/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/tomekw/tada/actions/workflows/test.yml)
 
-Abracadabra was too long. Tomek's Ada, too obvious. An opinionated project management tool for Ada.
+Abracadabra was too long. Tomek's Ada, too obvious. An opinionated package  management tool for Ada.
 
-Tada handles building, testing, and running Ada projects. It wraps GPRbuild
-with sensible defaults and a simple project manifest (`tada.toml`), so you
+Tada handles building, testing, and running Ada packages. It wraps GPRbuild
+with sensible defaults and a simple package manifest (`tada.toml`), so you
 spend less time writing build scripts and more time writing Ada.
 
 ## Status
@@ -49,8 +49,8 @@ tada build --profile release
 ### Create a new project
 
 ```bash
-tada init my_project          # executable project (default)
-tada init my_project --lib    # library project
+tada init my_package          # executable package (default)
+tada init my_package --lib    # library package
 ```
 
 ### Build

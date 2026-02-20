@@ -1,7 +1,6 @@
 with Ada.Characters.Handling;
 
 package body Tada.Templates is
-
    use Ada.Text_IO;
 
    function Mixed_Case (Name : String) return String is
@@ -20,10 +19,6 @@ package body Tada.Templates is
       return Result;
    end Mixed_Case;
 
-   --------------------
-   -- Write_Readme --
-   --------------------
-
    procedure Write_Readme
      (File : Ada.Text_IO.File_Type;
       Name : String)
@@ -32,22 +27,17 @@ package body Tada.Templates is
       Put_Line (File, "# " & Mixed_Case (Name));
    end Write_Readme;
 
-   ----------------------
-   -- Write_Manifest --
-   ----------------------
-
    procedure Write_Manifest
      (File : Ada.Text_IO.File_Type;
       Name : String)
    is
    begin
+      Put_Line (File, "[package]");
       Put_Line (File, "name = """ & Name & """");
       Put_Line (File, "version = ""0.1.0""");
+      New_Line (File);
+      Put_Line (File, "[dependencies]");
    end Write_Manifest;
-
-   ----------------------
-   -- Write_Gitignore --
-   ----------------------
 
    procedure Write_Gitignore
      (File : Ada.Text_IO.File_Type)
@@ -55,10 +45,6 @@ package body Tada.Templates is
    begin
       Put_Line (File, "target/");
    end Write_Gitignore;
-
-   ------------------------
-   -- Write_GPR_Config --
-   ------------------------
 
    procedure Write_GPR_Config
      (File : Ada.Text_IO.File_Type;
@@ -142,14 +128,10 @@ package body Tada.Templates is
         "end " & MC & "_Config;");
    end Write_GPR_Config;
 
-   ----------------------
-   -- Write_GPR_Main --
-   ----------------------
-
    procedure Write_GPR_Main
      (File : Ada.Text_IO.File_Type;
       Name : String;
-      Kind : Commands.Project_Kind)
+      Kind : Package_Kind)
    is
       MC : constant String := Mixed_Case (Name);
    begin
@@ -166,7 +148,7 @@ package body Tada.Templates is
         MC & "_Config.Build_Profile & ""/obj"";");
 
       case Kind is
-         when Commands.Exe =>
+         when Exe =>
             Put_Line (File,
               "   for Exec_Dir use ""target/"" & " &
               MC & "_Config.Build_Profile & ""/bin"";");
@@ -214,7 +196,7 @@ package body Tada.Templates is
             Put_Line (File,
               "   end Linker;");
 
-         when Commands.Lib =>
+         when Lib =>
             Put_Line (File,
               "   for Library_Name use """ & Name & """;");
             Put_Line (File,
@@ -241,10 +223,6 @@ package body Tada.Templates is
       Put_Line (File,
         "end " & MC & ";");
    end Write_GPR_Main;
-
-   -----------------------
-   -- Write_GPR_Tests --
-   -----------------------
 
    procedure Write_GPR_Tests
      (File : Ada.Text_IO.File_Type;
@@ -298,10 +276,6 @@ package body Tada.Templates is
         "end " & MC & "_Tests;");
    end Write_GPR_Tests;
 
-   -------------------------
-   -- Write_Test_Runner --
-   -------------------------
-
    procedure Write_Test_Runner
      (File : Ada.Text_IO.File_Type;
       Name : String)
@@ -327,10 +301,6 @@ package body Tada.Templates is
       Put_Line (File, "end Run_Tests;");
    end Write_Test_Runner;
 
-   -----------------------------
-   -- Write_Test_Suite_Spec --
-   -----------------------------
-
    procedure Write_Test_Suite_Spec
      (File : Ada.Text_IO.File_Type;
       Name : String)
@@ -349,10 +319,6 @@ package body Tada.Templates is
       Put_Line (File,
         "end " & MC & "_Suite;");
    end Write_Test_Suite_Spec;
-
-   -----------------------------
-   -- Write_Test_Suite_Body --
-   -----------------------------
 
    procedure Write_Test_Suite_Body
      (File : Ada.Text_IO.File_Type;
@@ -389,10 +355,6 @@ package body Tada.Templates is
       Put_Line (File,
         "end " & MC & "_Suite;");
    end Write_Test_Suite_Body;
-
-   -----------------------
-   -- Write_Test_Spec --
-   -----------------------
 
    procedure Write_Test_Spec
      (File : Ada.Text_IO.File_Type;
@@ -434,10 +396,6 @@ package body Tada.Templates is
       Put_Line (File,
         "end " & MC & "_Test;");
    end Write_Test_Spec;
-
-   -----------------------
-   -- Write_Test_Body --
-   -----------------------
 
    procedure Write_Test_Body
      (File : Ada.Text_IO.File_Type;
@@ -494,19 +452,15 @@ package body Tada.Templates is
         "end " & MC & "_Test;");
    end Write_Test_Body;
 
-   ------------------------------
-   -- Write_Root_Package_Spec --
-   ------------------------------
-
    procedure Write_Root_Package_Spec
      (File : Ada.Text_IO.File_Type;
       Name : String;
-      Kind : Commands.Project_Kind)
+      Kind : Package_Kind)
    is
       MC : constant String := Mixed_Case (Name);
    begin
       case Kind is
-         when Commands.Exe =>
+         when Exe =>
             Put_Line (File,
               "package " & MC & " is");
             Put_Line (File,
@@ -514,7 +468,7 @@ package body Tada.Templates is
             Put_Line (File,
               "end " & MC & ";");
 
-         when Commands.Lib =>
+         when Lib =>
             Put_Line (File,
               "package " & MC & " is");
             Put_Line (File, "");
@@ -526,10 +480,6 @@ package body Tada.Templates is
       end case;
    end Write_Root_Package_Spec;
 
-   ----------------------
-   -- Write_Main_Spec --
-   ----------------------
-
    procedure Write_Main_Spec
      (File : Ada.Text_IO.File_Type;
       Name : String)
@@ -539,10 +489,6 @@ package body Tada.Templates is
       Put_Line (File,
         "procedure " & MC & ".Main;");
    end Write_Main_Spec;
-
-   ----------------------
-   -- Write_Main_Body --
-   ----------------------
 
    procedure Write_Main_Body
      (File : Ada.Text_IO.File_Type;
@@ -561,10 +507,6 @@ package body Tada.Templates is
       Put_Line (File,
         "end " & MC & ".Main;");
    end Write_Main_Body;
-
-   ------------------------------
-   -- Write_Root_Package_Body --
-   ------------------------------
 
    procedure Write_Root_Package_Body
      (File : Ada.Text_IO.File_Type;
@@ -588,5 +530,4 @@ package body Tada.Templates is
       Put_Line (File,
         "end " & MC & ";");
    end Write_Root_Package_Body;
-
 end Tada.Templates;

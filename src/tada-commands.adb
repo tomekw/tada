@@ -1,6 +1,6 @@
 with Ada.Characters.Handling;
-with Ada.Command_Line;
 with Ada.Directories;
+with Ada.Exceptions;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
@@ -13,14 +13,12 @@ package body Tada.Commands is
 
    package OS renames GNAT.OS_Lib;
 
-   package Args_Results is new Results (CL_Arguments.Argument_List.Vector);
-   package Profile_Results is new Results (Profile_Kind);
-   package Project_Type_Results is new Results (Project_Kind);
-
    function Image (P : Profile_Kind) return String is
-     (Characters.Handling.To_Lower (Profile_Kind'Image (P)));
+   begin
+      return Characters.Handling.To_Lower (Profile_Kind'Image (P));
+   end Image;
 
-   function Image (P : Project_Kind) return String is
+   function Image (P : Package_Kind) return String is
    begin
       case P is
          when Exe =>
@@ -31,12 +29,9 @@ package body Tada.Commands is
    end Image;
 
    function Parse_Args (Arguments : CL_Arguments.Argument_List.Vector)
-     return Args_Results.Result
+     return CL_Arguments.Argument_List.Vector
    is
-      use Args_Results;
-
       Arguments_Count : constant Natural := Natural (Arguments.Length);
-
       Args : CL_Arguments.Argument_List.Vector;
 
       function Find_Args_Separator return Natural is
@@ -47,121 +42,91 @@ package body Tada.Commands is
                return I;
             end if;
          end loop;
+
          return 0;
       end Find_Args_Separator;
 
       Args_Separator : constant Natural := Find_Args_Separator;
    begin
       if Args_Separator = Arguments_Count then
-         return (Status => Error,
-                 Message => To_Unbounded_String ("missing args"));
+         raise Parse_Error with "missing args";
       elsif Args_Separator /= 0 then
          for I in Args_Separator + 1 .. Arguments_Count loop
             Args.Append (Arguments (I));
          end loop;
       end if;
 
-      return (Status => Ok,
-              Value => Args);
+      return Args;
    end Parse_Args;
 
-   function Parse_Project_Name (Arguments : CL_Arguments.Argument_List.Vector)
-     return Config.Project_Name_Results.Result
+   function Parse_Package_Name (Arguments : CL_Arguments.Argument_List.Vector)
+     return String
    is
-      use Config.Project_Name_Results;
-
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
       if Arguments_Count = 1 then
-         return (Status => Error,
-                 Message => To_Unbounded_String ("missing project name"));
-      else
-         declare
-            Project_Name : constant String := Characters.Handling.To_Lower (Arguments (2));
-         begin
-            if Config.Valid_Project_Name (Project_Name) then
-               return (Status => Ok,
-                       Value => To_Unbounded_String (Project_Name));
-            else
-               return (Status => Error,
-                       Message => To_Unbounded_String ("invalid project name '" & Arguments (2) & "'"));
-            end if;
-         end;
+         raise Parse_Error with "missing package name";
       end if;
-   end Parse_Project_Name;
 
-   function Parse_Project_Type (Arguments : CL_Arguments.Argument_List.Vector)
-     return Project_Type_Results.Result
+      declare
+         Package_Name : constant String := Characters.Handling.To_Lower (Arguments (2));
+      begin
+         if not Config.Valid_Package_Name (Package_Name) then
+            raise Parse_Error with "invalid package name '" & Arguments (2) & "'";
+         end if;
+
+         return Package_Name;
+      end;
+   end Parse_Package_Name;
+
+   function Parse_Package_Type (Arguments : CL_Arguments.Argument_List.Vector)
+     return Package_Kind
    is
-      use Project_Type_Results;
-
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
       if Arguments_Count < 3 then
-         return (Status => Ok,
-                 Value => Exe);
-      elsif Arguments (3) = "--exe"
-      then
-         return (Status => Ok,
-                 Value => Exe);
+         return Exe;
+      elsif Arguments (3) = "--exe" then
+         return Exe;
       elsif Arguments (3) = "--lib" then
-         return (Status => Ok,
-                 Value => Lib);
+         return Lib;
       else
-         return (Status => Error,
-                 Message => To_Unbounded_String ("invalid project type '" & Arguments (3) & "'"));
+         raise Parse_Error with "invalid package type '" & Arguments (3) & "'";
       end if;
-   end Parse_Project_Type;
+   end Parse_Package_Type;
 
    function Parse_Profile (Arguments : CL_Arguments.Argument_List.Vector)
-     return Profile_Results.Result
+     return Profile_Kind
    is
-      use Profile_Results;
-
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
       if Arguments_Count < 2 then
-         return (Status => Ok,
-                 Value => Debug);
+         return Debug;
       elsif Arguments (2) = "--" then
-         return (Status => Ok,
-                 Value => Debug);
+         return Debug;
       elsif Arguments_Count = 2 and then
             Arguments (2) = "--profile"
       then
-         return (Status => Error,
-                 Message => To_Unbounded_String ("missing profile"));
+         raise Parse_Error with "missing profile";
       else
          if Arguments (2) /= "--profile" then
-            return (Status => Error,
-                    Message => To_Unbounded_String ("unexpected option '" & Arguments (2) & "'"));
+            raise Parse_Error with "unexpected option '" & Arguments (2) & "'";
          end if;
 
          begin
-            return (Status => Ok,
-                    Value => Profile_Kind'Value (Arguments (3)));
+            return Profile_Kind'Value (Arguments (3));
          exception
             when Constraint_Error =>
-               return (Status => Error,
-                       Message => To_Unbounded_String ("invalid profile '" & Arguments (3) & "'"));
+               raise Parse_Error with "invalid profile '" & Arguments (3) & "'";
          end;
       end if;
    end Parse_Profile;
 
-   function Parse (Arguments : CL_Arguments.Argument_List.Vector)
-     return Command_Results.Result
-   is
-      use Args_Results;
-      use Command_Results;
-      use Profile_Results;
-      use Config.Project_Name_Results;
-      use Project_Type_Results;
-
+   function Parse (Arguments : CL_Arguments.Argument_List.Vector) return Command is
       Arguments_Count : constant Natural := Natural (Arguments.Length);
    begin
       if Arguments_Count = 0 then
-         return (Status => Ok,
-                 Value => (Kind => Help));
+         return (Kind => Help);
       end if;
 
       declare
@@ -171,112 +136,42 @@ package body Tada.Commands is
             Kind := Command_Kind'Value (Arguments (1));
          exception
             when Constraint_Error =>
-               return (Status => Error,
-                       Message => To_Unbounded_String ("unknown command '" & Arguments (1) & "'"));
+               raise Parse_Error with "unknown command '" & Arguments (1) & "'";
          end;
 
          case Kind is
             when Help =>
-               return (Status => Ok,
-                       Value => (Kind => Help));
+               return (Kind => Help);
             when Clean =>
-               return (Status => Ok,
-                       Value => (Kind => Clean));
+               return (Kind => Clean);
             when Version =>
-               return (Status => Ok,
-                       Value => (Kind => Version));
+               return (Kind => Version);
             when Init =>
-               declare
-                  Project_Name : constant Config.Project_Name_Results.Result := Parse_Project_Name (Arguments);
-                  Project_Type : constant Project_Type_Results.Result := Parse_Project_Type (Arguments);
-               begin
-                  if Project_Name.Status = Ok and then
-                     Project_Type.Status = Ok
-                  then
-                     return (Status => Ok,
-                             Value => (Kind => Init,
-                                       Project_Name => Project_Name.Value,
-                                       Project_Type => Project_Type.Value));
-                  elsif Project_Name.Status = Error and then
-                        Project_Type.Status = Error
-                  then
-                     return (Status => Error,
-                             Message => Project_Name.Message & ", " & Project_Type.Message);
-                  elsif Project_Name.Status = Error then
-                     return (Status => Error,
-                             Message => Project_Name.Message);
-                  elsif Project_Type.Status = Error then
-                     return (Status => Error,
-                             Message => Project_Type.Message);
-                  end if;
-
-                  raise Program_Error with "unreachable";
-               end;
+               return (Kind => Init,
+                       Package_Name => To_Unbounded_String (Parse_Package_Name (Arguments)),
+                       Package_Type => Parse_Package_Type (Arguments));
             when Build =>
-               declare
-                  Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
-               begin
-                  if Profile.Status = Ok then
-                     return (Status => Ok,
-                             Value => (Kind => Build,
-                                       Profile => Profile.Value));
-                  else
-                     return (Status => Error,
-                             Message => Profile.Message);
-                  end if;
-               end;
+               return (Kind => Build,
+                       Build_Profile => Parse_Profile (Arguments));
             when Test =>
-               declare
-                  Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
-               begin
-                  if Profile.Status = Ok then
-                     return (Status => Ok,
-                             Value => (Kind => Test,
-                                       Profile => Profile.Value));
-                  else
-                     return (Status => Error,
-                             Message => Profile.Message);
-                  end if;
-               end;
+               return (Kind => Test,
+                       Test_Profile => Parse_Profile (Arguments));
             when Run =>
-               declare
-                  Profile : constant Profile_Results.Result := Parse_Profile (Arguments);
-                  Args : constant Args_Results.Result := Parse_Args (Arguments);
-               begin
-                  if Profile.Status = Ok and then
-                     Args.Status = Ok
-                  then
-                     return (Status => Ok,
-                             Value => (Kind => Run,
-                                       Run_Profile => Profile.Value,
-                                       Args => Args.Value));
-                  elsif Profile.Status = Error and then
-                        Args.Status = Error
-                  then
-                     return (Status => Error,
-                             Message => Profile.Message & ", " & Args.Message);
-                  elsif Profile.Status = Error then
-                     return (Status => Error,
-                             Message => Profile.Message);
-                  elsif Args.Status = Error then
-                     return (Status => Error,
-                             Message => Args.Message);
-                  end if;
-
-                  raise Program_Error with "unreachable";
-               end;
+               return (Kind => Run,
+                       Run_Profile => Parse_Profile (Arguments),
+                       Args => Parse_Args (Arguments));
          end case;
       end;
    end Parse;
 
-   function In_Project_Root return Boolean is
+   function In_Package_Root return Boolean is
       use type Ada.Directories.File_Kind;
 
-      Project_File : constant String := "tada.toml";
+      Package_File : constant String := "tada.toml";
    begin
-      return Directories.Exists (Project_File) and then
-             Directories.Kind (Project_File) = Directories.Ordinary_File;
-   end In_Project_Root;
+      return Directories.Exists (Package_File) and then
+             Directories.Kind (Package_File) = Directories.Ordinary_File;
+   end In_Package_Root;
 
    function Exec_On_Path (Exec_Name : String) return Boolean is
       use type GNAT.Strings.String_Access;
@@ -349,64 +244,24 @@ package body Tada.Commands is
          return False;
    end Execute_Target;
 
-   use Config;
-   use Config.Manifest_Results;
-   use Config.Project_Name_Results;
-
-   function Read_Project_Name return Project_Name_Results.Result is
-      Manifest : constant Config.Manifest_Results.Result := Config.Parse ("tada.toml");
+   function Read_Package_Name return String is
    begin
-      if Manifest.Status /= Manifest_Results.Ok then
-         return (Status => Project_Name_Results.Error,
-                 Message => Manifest.Message);
-      end if;
-
-      if Manifest.Value.Name.Status /= Project_Name_Results.Ok then
-         return (Status => Project_Name_Results.Error,
-                 Message => To_Unbounded_String ("invalid 'name' in tada.toml"));
-      end if;
-
-      return Manifest.Value.Name;
-   end Read_Project_Name;
+      return Config.Read ("tada.toml").Sections ("package") ("name");
+   end Read_Package_Name;
 
    procedure Print_Usage is
    begin
       Text_IO.Put_Line ("Usage: tada [command] [options]");
       Text_IO.New_Line;
       Text_IO.Put_Line ("Commands:");
-      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new project");
-      Text_IO.Put_Line ("    build [--profile <p>]               Compile the project");
+      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
+      Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
       Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
       Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
       Text_IO.Put_Line ("    help                                Show this message");
       Text_IO.Put_Line ("    version                             Display version");
    end Print_Usage;
-
-   procedure Print_Not_In_Project_Root is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find `tada.toml` in current directory");
-   end Print_Not_In_Project_Root;
-
-   procedure Print_Exec_Not_Found (Exec_Name : String) is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: could not find executable `" & Exec_Name & "` in PATH");
-   end Print_Exec_Not_Found;
-
-   procedure Print_Project_Name_Exists (Project_Name : String) is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: project name `" & Project_Name & "` exists. Aborting.");
-   end Print_Project_Name_Exists;
-
-   procedure Print_Invalid_Project_Name (Message : String) is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: " & Message & ". Aborting.");
-   end Print_Invalid_Project_Name;
-
-   procedure Print_Something_Went_Wrong is
-   begin
-      Text_IO.Put_Line (Text_IO.Standard_Error, "Error: something went wrong. Aborting.");
-   end Print_Something_Went_Wrong;
 
    function Get_Exe_Suffix return String is
       Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
@@ -431,10 +286,8 @@ package body Tada.Commands is
          when Help | Init | Version =>
             null;
          when Build | Clean | Test | Run =>
-            if not In_Project_Root then
-               Print_Not_In_Project_Root;
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
+            if not In_Package_Root then
+               raise Execute_Error with "could not find 'tada.toml' in current directory";
             end if;
       end case;
 
@@ -443,71 +296,46 @@ package body Tada.Commands is
             null;
          when Build | Test | Run =>
             if not Exec_On_Path ("gprbuild") then
-               Print_Exec_Not_Found ("gprbuild");
-               Command_Line.Set_Exit_Status (Command_Line.Failure);
-               return;
+               raise Execute_Error with "could not find executable 'gprbuild' in PATH";
             end if;
       end case;
 
       case Cmd.Kind is
          when Build =>
             declare
-               Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
+               Package_Name : constant String := Read_Package_Name;
             begin
-               if Project_Name.Status /= Project_Name_Results.Ok then
-                  Print_Invalid_Project_Name (To_String (Project_Name.Message));
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
-               end if;
-
-               if not Execute_Build (To_String (Project_Name.Value), Image (Cmd.Profile)) then
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
+               if not Execute_Build (Package_Name, Image (Cmd.Build_Profile)) then
+                  raise Execute_Error with "build failed";
                end if;
             end;
          when Test =>
             declare
-               Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
-               Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Profile), "run_tests");
+               Package_Name : constant String := Read_Package_Name;
+               Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
             begin
-               if Project_Name.Status /= Project_Name_Results.Ok then
-                  Print_Invalid_Project_Name (To_String (Project_Name.Message));
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
-               end if;
-
-               if not Execute_Build (To_String (Project_Name.Value) & "_tests", Image (Cmd.Profile)) then
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
+               if not Execute_Build (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
+                  raise Execute_Error with "test build failed";
                end if;
 
                if not Execute_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
                then
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
+                  raise Execute_Error with "tests failed";
                end if;
             end;
          when Run =>
             declare
-               Project_Name : constant Project_Name_Results.Result := Read_Project_Name;
+               Package_Name : constant String := Read_Package_Name;
             begin
-               if Project_Name.Status /= Project_Name_Results.Ok then
-                  Print_Invalid_Project_Name (To_String (Project_Name.Message));
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
-               end if;
-
-               if not Execute_Build (To_String (Project_Name.Value), Image (Cmd.Run_Profile)) then
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
+               if not Execute_Build (Package_Name, Image (Cmd.Run_Profile)) then
+                  raise Execute_Error with "run build failed";
                end if;
 
                declare
-                  Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), To_String (Project_Name.Value));
+                  Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), Package_Name);
                begin
                   if not Execute_Target (Exec_Name, Cmd.Args) then
-                     Command_Line.Set_Exit_Status (Command_Line.Failure);
-                     return;
+                     raise Execute_Error with "run failed";
                   end if;
                end;
             end;
@@ -515,42 +343,39 @@ package body Tada.Commands is
             declare
                use Directories;
 
-               New_Project_Name : constant String := To_String (Cmd.Project_Name);
-               Root : constant String := Full_Name (New_Project_Name);
+               New_Package_Name : constant String := To_String (Cmd.Package_Name);
+               Root : constant String := Full_Name (New_Package_Name);
             begin
-               Text_IO.Put_Line ("Creating new project (" & Image (Cmd.Project_Type) & ")");
+               Text_IO.Put_Line ("Creating new package (" & Image (Cmd.Package_Type) & ")");
 
                if Exists (Root) then
-                  Print_Project_Name_Exists (New_Project_Name);
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-                  return;
+                  raise Execute_Error with "package '" & New_Package_Name & "' exists. Aborting.";
                end if;
 
                Create_Directory (Root);
                Create_Directory (Compose (Root, "src"));
                Create_Directory (Compose (Root, "tests"));
 
-               Set_Directory (Root);
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, "README.md");
-                  Templates.Write_Readme (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "README.md"));
+                  Templates.Write_Readme (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, "tada.toml");
-                  Templates.Write_Manifest (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "tada.toml"));
+                  Templates.Write_Manifest (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, ".gitignore");
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, ".gitignore"));
                   Templates.Write_Gitignore (F);
                   Text_IO.Close (F);
                end;
@@ -558,112 +383,106 @@ package body Tada.Commands is
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "_config.gpr");
-                  Templates.Write_GPR_Config (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & "_config.gpr"));
+                  Templates.Write_GPR_Config (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & ".gpr");
-                  Templates.Write_GPR_Main (F, New_Project_Name, Cmd.Project_Type);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & ".gpr"));
+                  Templates.Write_GPR_Main (F, New_Package_Name, Cmd.Package_Type);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "_tests.gpr");
-                  Templates.Write_GPR_Tests (F, New_Project_Name);
-                  Text_IO.Close (F);
-               end;
-
-               Set_Directory (Compose (Root, "tests"));
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, "run_tests.adb");
-                  Templates.Write_Test_Runner (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & "_tests.gpr"));
+                  Templates.Write_GPR_Tests (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_suite.ads");
-                  Templates.Write_Test_Suite_Spec (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), "run_tests.adb"));
+                  Templates.Write_Test_Runner (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_suite.adb");
-                  Templates.Write_Test_Suite_Body (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_suite.ads"));
+                  Templates.Write_Test_Suite_Spec (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_test.ads");
-                  Templates.Write_Test_Spec (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_suite.adb"));
+                  Templates.Write_Test_Suite_Body (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name &  "_test.adb");
-                  Templates.Write_Test_Body (F, New_Project_Name);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_test.ads"));
+                  Templates.Write_Test_Spec (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
-
-               Set_Directory (Compose (Root, "src"));
 
                declare
                   F : Text_IO.File_Type;
                begin
-                  Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & ".ads");
-                  Templates.Write_Root_Package_Spec (F, New_Project_Name, Cmd.Project_Type);
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_test.adb"));
+                  Templates.Write_Test_Body (F, New_Package_Name);
                   Text_IO.Close (F);
                end;
 
-               case Cmd.Project_Type is
+               declare
+                  F : Text_IO.File_Type;
+               begin
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & ".ads"));
+                  Templates.Write_Root_Package_Spec (F, New_Package_Name, Cmd.Package_Type);
+                  Text_IO.Close (F);
+               end;
+
+               case Cmd.Package_Type is
                   when Exe =>
                      declare
                         F : Text_IO.File_Type;
                      begin
-                        Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "-main.ads");
-                        Templates.Write_Main_Spec (F, New_Project_Name);
+                        Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & "-main.ads"));
+                        Templates.Write_Main_Spec (F, New_Package_Name);
                         Text_IO.Close (F);
                      end;
 
                      declare
                         F : Text_IO.File_Type;
                      begin
-                        Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & "-main.adb");
-                        Templates.Write_Main_Body (F, New_Project_Name);
+                        Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & "-main.adb"));
+                        Templates.Write_Main_Body (F, New_Package_Name);
                         Text_IO.Close (F);
                      end;
                   when Lib =>
                      declare
                         F : Text_IO.File_Type;
                      begin
-                        Text_IO.Create (F, Text_IO.Out_File, New_Project_Name & ".adb");
-                        Templates.Write_Root_Package_Body (F, New_Project_Name);
+                        Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & ".adb"));
+                        Templates.Write_Root_Package_Body (F, New_Package_Name);
                         Text_IO.Close (F);
                      end;
                end case;
             exception
-               when others =>
-                  Print_Something_Went_Wrong;
-                  Command_Line.Set_Exit_Status (Command_Line.Failure);
-
-                  Set_Directory (Containing_Directory (Root));
+               when E : others =>
                   Delete_Tree (Root);
+
+                  raise Execute_Error with Exceptions.Exception_Message (E);
             end;
          when Clean =>
             if Directories.Exists ("target") then
