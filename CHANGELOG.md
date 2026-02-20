@@ -1,6 +1,7 @@
 ## unreleased
 
 * breaking: change `tada.toml` format
+* breaking: change `LICENSE` to `EUPL`
 
 ## 0.2.0
 
