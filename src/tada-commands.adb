@@ -1,5 +1,6 @@
 with Ada.Characters.Handling;
 with Ada.Directories;
+with Ada.Environment_Variables;
 with Ada.Exceptions;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
@@ -278,6 +279,18 @@ package body Tada.Commands is
          Name => Name) & Get_Exe_Suffix;
    end Target_Bin_Path;
 
+   function Tada_Cache_Path return String is
+      use Directories;
+
+      Is_Windows : constant Boolean := OS.Directory_Separator = '\';
+   begin
+      if Is_Windows then
+         return Compose (Compose (Environment_Variables.Value ("LOCALAPPDATA"), "tada"), "package");
+      else
+         return Compose (Compose (Compose (Environment_Variables.Value ("HOME"), ".cache"), "tada"), "package");
+      end if;
+   end Tada_Cache_Path;
+
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
@@ -308,7 +321,40 @@ package body Tada.Commands is
                end if;
             end;
          when Cache =>
-            null;
+            declare
+               use Directories;
+
+               Tada_Manifest : constant Config.Manifest := Config.Read ("tada.toml");
+               Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
+               Package_Version : constant String := Tada_Manifest.Sections ("package") ("version");
+               Package_Name_Cache_Path : constant String := Compose (Tada_Cache_Path, Package_Name);
+               Package_Full_Cache_Path : constant String := Compose (Package_Name_Cache_Path, Package_Version);
+            begin
+               if Exists (Package_Full_Cache_Path) then
+                  raise Execute_Error with "package '" & Package_Name & "', version '" & Package_Version &
+                                           "' already cached at '" & Package_Full_Cache_Path & "'";
+               end if;
+
+               begin
+                  Create_Path (Package_Full_Cache_Path);
+               exception
+                  when Use_Error =>
+                     raise Execute_Error with "unable to create '" & Package_Full_Cache_Path & "'";
+               end;
+
+               Copy_File (Full_Name ("tada.toml"),
+                          Compose (Package_Full_Cache_Path, Simple_Name ("tada.toml")));
+               Copy_File (Full_Name (Package_Name & ".gpr"),
+                          Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & ".gpr")));
+               Copy_File (Full_Name (Package_Name & "_config.gpr"),
+                          Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & "_config.gpr")));
+               --  TODO: Copy src/
+            exception
+               when E : others =>
+                  Delete_Tree (Package_Name_Cache_Path);
+
+                  raise Execute_Error with Exceptions.Exception_Message (E);
+            end;
          when Clean =>
             if Directories.Exists ("target") then
                Text_IO.Put_Line ("Removing target/");
