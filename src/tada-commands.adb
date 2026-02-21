@@ -247,21 +247,6 @@ package body Tada.Commands is
          return False;
    end Execute_Target;
 
-   procedure Print_Usage is
-   begin
-      Text_IO.Put_Line ("Usage: tada [command] [options]");
-      Text_IO.New_Line;
-      Text_IO.Put_Line ("Commands:");
-      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
-      Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
-      Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
-      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
-      Text_IO.Put_Line ("    clean                               Remove build artifacts");
-      Text_IO.Put_Line ("    cache                               Add package to the local cache");
-      Text_IO.Put_Line ("    help                                Show this message");
-      Text_IO.Put_Line ("    version                             Display version");
-   end Print_Usage;
-
    function Get_Exe_Suffix return String is
       Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
       Result : constant String := Suffix.all;
@@ -291,6 +276,260 @@ package body Tada.Commands is
       end if;
    end Tada_Cache_Path;
 
+   procedure Execute_Build (Cmd : Command) is
+      Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
+   begin
+      if not Execute_Build (Package_Name, Image (Cmd.Build_Profile)) then
+         raise Execute_Error with "build failed";
+      end if;
+   end Execute_Build;
+
+   procedure Execute_Cache is
+      use Directories;
+
+      Tada_Manifest : constant Config.Manifest := Config.Read ("tada.toml");
+      Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
+      Package_Version : constant String := Tada_Manifest.Sections ("package") ("version");
+      Package_Name_Cache_Path : constant String := Compose (Tada_Cache_Path, Package_Name);
+      Package_Full_Cache_Path : constant String := Compose (Package_Name_Cache_Path, Package_Version);
+   begin
+      if Exists (Package_Full_Cache_Path) then
+         raise Execute_Error with "package '" & Package_Name & "', version '" & Package_Version &
+                                  "' already cached at '" & Package_Full_Cache_Path & "'";
+      end if;
+
+      begin
+         Create_Path (Package_Full_Cache_Path);
+      exception
+         when Use_Error =>
+            raise Execute_Error with "unable to create '" & Package_Full_Cache_Path & "'";
+      end;
+
+      Copy_File (Full_Name ("tada.toml"),
+                 Compose (Package_Full_Cache_Path, Simple_Name ("tada.toml")));
+      Copy_File (Full_Name (Package_Name & ".gpr"),
+                 Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & ".gpr")));
+      Copy_File (Full_Name (Package_Name & "_config.gpr"),
+                 Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & "_config.gpr")));
+      --  TODO: Copy src/
+   exception
+      when E : others =>
+         Delete_Tree (Package_Name_Cache_Path);
+
+         raise Execute_Error with Exceptions.Exception_Message (E);
+   end Execute_Cache;
+
+   procedure Execute_Clean is
+   begin
+      if Directories.Exists ("target") then
+         Text_IO.Put_Line ("Removing target/");
+         Directories.Delete_Tree ("target");
+      end if;
+   end Execute_Clean;
+
+   procedure Execute_Help is
+   begin
+      Text_IO.Put_Line ("Usage: tada [command] [options]");
+      Text_IO.New_Line;
+      Text_IO.Put_Line ("Commands:");
+      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
+      Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
+      Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
+      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
+      Text_IO.Put_Line ("    clean                               Remove build artifacts");
+      Text_IO.Put_Line ("    cache                               Add package to the local cache");
+      Text_IO.Put_Line ("    help                                Show this message");
+      Text_IO.Put_Line ("    version                             Display version");
+   end Execute_Help;
+
+   procedure Execute_Init (Cmd : Command) is
+      use Directories;
+
+      New_Package_Name : constant String := To_String (Cmd.Package_Name);
+      Root : constant String := Full_Name (New_Package_Name);
+   begin
+      Text_IO.Put_Line ("Creating new package (" & Image (Cmd.Package_Type) & ")");
+
+      if Exists (Root) then
+         raise Execute_Error with "package '" & New_Package_Name & "' exists. Aborting.";
+      end if;
+
+      Create_Directory (Root);
+      Create_Directory (Compose (Root, "src"));
+      Create_Directory (Compose (Root, "tests"));
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "README.md"));
+         Templates.Write_Readme (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "tada.toml"));
+         Templates.Write_Manifest (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, ".gitignore"));
+         Templates.Write_Gitignore (F);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & "_config.gpr"));
+         Templates.Write_GPR_Config (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "deps.gpr"));
+         Templates.Write_GPR_Deps (F);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & ".gpr"));
+         Templates.Write_GPR_Main (F, New_Package_Name, Cmd.Package_Type);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & "_tests.gpr"));
+         Templates.Write_GPR_Tests (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), "run_tests.adb"));
+         Templates.Write_Test_Runner (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_suite.ads"));
+         Templates.Write_Test_Suite_Spec (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_suite.adb"));
+         Templates.Write_Test_Suite_Body (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_test.ads"));
+         Templates.Write_Test_Spec (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_test.adb"));
+         Templates.Write_Test_Body (F, New_Package_Name);
+         Text_IO.Close (F);
+      end;
+
+      declare
+         F : Text_IO.File_Type;
+      begin
+         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & ".ads"));
+         Templates.Write_Root_Package_Spec (F, New_Package_Name, Cmd.Package_Type);
+         Text_IO.Close (F);
+      end;
+
+      case Cmd.Package_Type is
+         when Exe =>
+            declare
+               F : Text_IO.File_Type;
+            begin
+               Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & "-main.ads"));
+               Templates.Write_Main_Spec (F, New_Package_Name);
+               Text_IO.Close (F);
+            end;
+
+            declare
+               F : Text_IO.File_Type;
+            begin
+               Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & "-main.adb"));
+               Templates.Write_Main_Body (F, New_Package_Name);
+               Text_IO.Close (F);
+            end;
+         when Lib =>
+            declare
+               F : Text_IO.File_Type;
+            begin
+               Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & ".adb"));
+               Templates.Write_Root_Package_Body (F, New_Package_Name);
+               Text_IO.Close (F);
+            end;
+      end case;
+   exception
+      when E : others =>
+         Delete_Tree (Root);
+
+         raise Execute_Error with Exceptions.Exception_Message (E);
+   end Execute_Init;
+
+   procedure Execute_Run (Cmd : Command) is
+      Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
+   begin
+      if not Execute_Build (Package_Name, Image (Cmd.Run_Profile)) then
+         raise Execute_Error with "run build failed";
+      end if;
+
+      declare
+         Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), Package_Name);
+      begin
+         if not Execute_Target (Exec_Name, Cmd.Args) then
+            raise Execute_Error with "run failed";
+         end if;
+      end;
+   end Execute_Run;
+
+   procedure Execute_Version is
+   begin
+      Text_IO.Put_Line (Tada.Version);
+   end Execute_Version;
+
+   procedure Execute_Test (Cmd : Command) is
+      Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
+      Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
+   begin
+      if not Execute_Build (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
+         raise Execute_Error with "test build failed";
+      end if;
+
+      if not Execute_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
+      then
+         raise Execute_Error with "tests failed";
+      end if;
+   end Execute_Test;
+
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
@@ -312,241 +551,14 @@ package body Tada.Commands is
       end case;
 
       case Cmd.Kind is
-         when Build =>
-            declare
-               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
-            begin
-               if not Execute_Build (Package_Name, Image (Cmd.Build_Profile)) then
-                  raise Execute_Error with "build failed";
-               end if;
-            end;
-         when Cache =>
-            declare
-               use Directories;
-
-               Tada_Manifest : constant Config.Manifest := Config.Read ("tada.toml");
-               Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
-               Package_Version : constant String := Tada_Manifest.Sections ("package") ("version");
-               Package_Name_Cache_Path : constant String := Compose (Tada_Cache_Path, Package_Name);
-               Package_Full_Cache_Path : constant String := Compose (Package_Name_Cache_Path, Package_Version);
-            begin
-               if Exists (Package_Full_Cache_Path) then
-                  raise Execute_Error with "package '" & Package_Name & "', version '" & Package_Version &
-                                           "' already cached at '" & Package_Full_Cache_Path & "'";
-               end if;
-
-               begin
-                  Create_Path (Package_Full_Cache_Path);
-               exception
-                  when Use_Error =>
-                     raise Execute_Error with "unable to create '" & Package_Full_Cache_Path & "'";
-               end;
-
-               Copy_File (Full_Name ("tada.toml"),
-                          Compose (Package_Full_Cache_Path, Simple_Name ("tada.toml")));
-               Copy_File (Full_Name (Package_Name & ".gpr"),
-                          Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & ".gpr")));
-               Copy_File (Full_Name (Package_Name & "_config.gpr"),
-                          Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & "_config.gpr")));
-               --  TODO: Copy src/
-            exception
-               when E : others =>
-                  Delete_Tree (Package_Name_Cache_Path);
-
-                  raise Execute_Error with Exceptions.Exception_Message (E);
-            end;
-         when Clean =>
-            if Directories.Exists ("target") then
-               Text_IO.Put_Line ("Removing target/");
-               Directories.Delete_Tree ("target");
-            end if;
-         when Help =>
-            Print_Usage;
-         when Init =>
-            declare
-               use Directories;
-
-               New_Package_Name : constant String := To_String (Cmd.Package_Name);
-               Root : constant String := Full_Name (New_Package_Name);
-            begin
-               Text_IO.Put_Line ("Creating new package (" & Image (Cmd.Package_Type) & ")");
-
-               if Exists (Root) then
-                  raise Execute_Error with "package '" & New_Package_Name & "' exists. Aborting.";
-               end if;
-
-               Create_Directory (Root);
-               Create_Directory (Compose (Root, "src"));
-               Create_Directory (Compose (Root, "tests"));
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "README.md"));
-                  Templates.Write_Readme (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "tada.toml"));
-                  Templates.Write_Manifest (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, ".gitignore"));
-                  Templates.Write_Gitignore (F);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & "_config.gpr"));
-                  Templates.Write_GPR_Config (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "deps.gpr"));
-                  Templates.Write_GPR_Deps (F);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & ".gpr"));
-                  Templates.Write_GPR_Main (F, New_Package_Name, Cmd.Package_Type);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & "_tests.gpr"));
-                  Templates.Write_GPR_Tests (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), "run_tests.adb"));
-                  Templates.Write_Test_Runner (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_suite.ads"));
-                  Templates.Write_Test_Suite_Spec (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_suite.adb"));
-                  Templates.Write_Test_Suite_Body (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_test.ads"));
-                  Templates.Write_Test_Spec (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package_Name &  "_test.adb"));
-                  Templates.Write_Test_Body (F, New_Package_Name);
-                  Text_IO.Close (F);
-               end;
-
-               declare
-                  F : Text_IO.File_Type;
-               begin
-                  Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & ".ads"));
-                  Templates.Write_Root_Package_Spec (F, New_Package_Name, Cmd.Package_Type);
-                  Text_IO.Close (F);
-               end;
-
-               case Cmd.Package_Type is
-                  when Exe =>
-                     declare
-                        F : Text_IO.File_Type;
-                     begin
-                        Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & "-main.ads"));
-                        Templates.Write_Main_Spec (F, New_Package_Name);
-                        Text_IO.Close (F);
-                     end;
-
-                     declare
-                        F : Text_IO.File_Type;
-                     begin
-                        Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & "-main.adb"));
-                        Templates.Write_Main_Body (F, New_Package_Name);
-                        Text_IO.Close (F);
-                     end;
-                  when Lib =>
-                     declare
-                        F : Text_IO.File_Type;
-                     begin
-                        Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package_Name & ".adb"));
-                        Templates.Write_Root_Package_Body (F, New_Package_Name);
-                        Text_IO.Close (F);
-                     end;
-               end case;
-            exception
-               when E : others =>
-                  Delete_Tree (Root);
-
-                  raise Execute_Error with Exceptions.Exception_Message (E);
-            end;
-         when Run =>
-            declare
-               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
-            begin
-               if not Execute_Build (Package_Name, Image (Cmd.Run_Profile)) then
-                  raise Execute_Error with "run build failed";
-               end if;
-
-               declare
-                  Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), Package_Name);
-               begin
-                  if not Execute_Target (Exec_Name, Cmd.Args) then
-                     raise Execute_Error with "run failed";
-                  end if;
-               end;
-            end;
-         when Test =>
-            declare
-               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
-               Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
-            begin
-               if not Execute_Build (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
-                  raise Execute_Error with "test build failed";
-               end if;
-
-               if not Execute_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
-               then
-                  raise Execute_Error with "tests failed";
-               end if;
-            end;
-         when Version =>
-            Text_IO.Put_Line (Tada.Version);
+         when Build => Execute_Build (Cmd);
+         when Cache => Execute_Cache;
+         when Clean => Execute_Clean;
+         when Help => Execute_Help;
+         when Init => Execute_Init (Cmd);
+         when Run => Execute_Run (Cmd);
+         when Test => Execute_Test (Cmd);
+         when Version => Execute_Version;
       end case;
    end Execute;
 end Tada.Commands;
