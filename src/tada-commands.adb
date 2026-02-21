@@ -391,6 +391,14 @@ package body Tada.Commands is
                declare
                   F : Text_IO.File_Type;
                begin
+                  Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "deps.gpr"));
+                  Templates.Write_GPR_Deps (F);
+                  Text_IO.Close (F);
+               end;
+
+               declare
+                  F : Text_IO.File_Type;
+               begin
                   Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package_Name & ".gpr"));
                   Templates.Write_GPR_Main (F, New_Package_Name, Cmd.Package_Type);
                   Text_IO.Close (F);

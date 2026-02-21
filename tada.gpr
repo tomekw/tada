@@ -1,4 +1,5 @@
 with "tada_config.gpr";
+with "deps.gpr";
 
 project Tada is
 
