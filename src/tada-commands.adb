@@ -244,11 +244,6 @@ package body Tada.Commands is
          return False;
    end Execute_Target;
 
-   function Read_Package_Name return String is
-   begin
-      return Config.Read ("tada.toml").Sections ("package") ("name");
-   end Read_Package_Name;
-
    procedure Print_Usage is
    begin
       Text_IO.Put_Line ("Usage: tada [command] [options]");
@@ -303,7 +298,7 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Build =>
             declare
-               Package_Name : constant String := Read_Package_Name;
+               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
             begin
                if not Execute_Build (Package_Name, Image (Cmd.Build_Profile)) then
                   raise Execute_Error with "build failed";
@@ -311,7 +306,7 @@ package body Tada.Commands is
             end;
          when Test =>
             declare
-               Package_Name : constant String := Read_Package_Name;
+               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
                Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
             begin
                if not Execute_Build (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
@@ -325,7 +320,7 @@ package body Tada.Commands is
             end;
          when Run =>
             declare
-               Package_Name : constant String := Read_Package_Name;
+               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
             begin
                if not Execute_Build (Package_Name, Image (Cmd.Run_Profile)) then
                   raise Execute_Error with "run build failed";
