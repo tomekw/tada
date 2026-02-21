@@ -1,5 +1,7 @@
 ## unreleased
 
+* breaking: scaffold empty `deps.gpr` file
+
 ## 0.3.0
 
 * breaking: change `tada.toml` format
