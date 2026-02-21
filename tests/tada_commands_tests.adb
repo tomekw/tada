@@ -43,6 +43,7 @@ package body Tada_Commands_Tests is
       Registration.Register_Routine (T, Test_Parse_Init_Name_Foo'Access, "init hello --foo raises Parse_Error");
       Registration.Register_Routine (T, Test_Parse_Init_Name_Camel'Access, "init cAmEl parses to Init, kind: exe");
       Registration.Register_Routine (T, Test_Parse_Init_Name_Package'Access, "init package raises Parse_Error");
+      Registration.Register_Routine (T, Test_Parse_Cache'Access, "cache parses to Cache");
    end Register_Tests;
 
    procedure Test_Parse_Empty_Args (Unused_T : in out Test_Cases.Test_Case'Class) is
@@ -238,4 +239,10 @@ package body Tada_Commands_Tests is
    begin
       Assert_Exception (Parse_Init_Name_Package'Access, "Expected: Parse_Error");
    end Test_Parse_Init_Name_Package;
+
+   procedure Test_Parse_Cache (Unused_T : in out Test_Cases.Test_Case'Class) is
+      Args : constant Argument_List.Vector := ["cache"];
+   begin
+      Assert (Commands.Parse (Args) = (Kind => Cache), "Expected command: Cache");
+   end Test_Parse_Cache;
 end Tada_Commands_Tests;

@@ -140,26 +140,28 @@ package body Tada.Commands is
          end;
 
          case Kind is
-            when Help =>
-               return (Kind => Help);
+            when Build =>
+               return (Kind => Build,
+                       Build_Profile => Parse_Profile (Arguments));
+            when Cache =>
+               return (Kind => Cache);
             when Clean =>
                return (Kind => Clean);
-            when Version =>
-               return (Kind => Version);
+            when Help =>
+               return (Kind => Help);
             when Init =>
                return (Kind => Init,
                        Package_Name => To_Unbounded_String (Parse_Package_Name (Arguments)),
                        Package_Type => Parse_Package_Type (Arguments));
-            when Build =>
-               return (Kind => Build,
-                       Build_Profile => Parse_Profile (Arguments));
-            when Test =>
-               return (Kind => Test,
-                       Test_Profile => Parse_Profile (Arguments));
             when Run =>
                return (Kind => Run,
                        Run_Profile => Parse_Profile (Arguments),
                        Args => Parse_Args (Arguments));
+            when Test =>
+               return (Kind => Test,
+                       Test_Profile => Parse_Profile (Arguments));
+            when Version =>
+               return (Kind => Version);
          end case;
       end;
    end Parse;
@@ -254,6 +256,7 @@ package body Tada.Commands is
       Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
       Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
+      Text_IO.Put_Line ("    cache                               Add package to the local cache");
       Text_IO.Put_Line ("    help                                Show this message");
       Text_IO.Put_Line ("    version                             Display version");
    end Print_Usage;
@@ -280,16 +283,16 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Help | Init | Version =>
             null;
-         when Build | Clean | Test | Run =>
+         when Build | Cache | Clean | Run | Test =>
             if not In_Package_Root then
                raise Execute_Error with "could not find 'tada.toml' in current directory";
             end if;
       end case;
 
       case Cmd.Kind is
-         when Help | Clean | Init | Version =>
+         when Cache | Clean | Help | Init | Version =>
             null;
-         when Build | Test | Run =>
+         when Build | Run | Test =>
             if not Exec_On_Path ("gprbuild") then
                raise Execute_Error with "could not find executable 'gprbuild' in PATH";
             end if;
@@ -304,36 +307,15 @@ package body Tada.Commands is
                   raise Execute_Error with "build failed";
                end if;
             end;
-         when Test =>
-            declare
-               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
-               Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
-            begin
-               if not Execute_Build (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
-                  raise Execute_Error with "test build failed";
-               end if;
-
-               if not Execute_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
-               then
-                  raise Execute_Error with "tests failed";
-               end if;
-            end;
-         when Run =>
-            declare
-               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
-            begin
-               if not Execute_Build (Package_Name, Image (Cmd.Run_Profile)) then
-                  raise Execute_Error with "run build failed";
-               end if;
-
-               declare
-                  Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), Package_Name);
-               begin
-                  if not Execute_Target (Exec_Name, Cmd.Args) then
-                     raise Execute_Error with "run failed";
-                  end if;
-               end;
-            end;
+         when Cache =>
+            null;
+         when Clean =>
+            if Directories.Exists ("target") then
+               Text_IO.Put_Line ("Removing target/");
+               Directories.Delete_Tree ("target");
+            end if;
+         when Help =>
+            Print_Usage;
          when Init =>
             declare
                use Directories;
@@ -487,13 +469,36 @@ package body Tada.Commands is
 
                   raise Execute_Error with Exceptions.Exception_Message (E);
             end;
-         when Clean =>
-            if Directories.Exists ("target") then
-               Text_IO.Put_Line ("Removing target/");
-               Directories.Delete_Tree ("target");
-            end if;
-         when Help =>
-            Print_Usage;
+         when Run =>
+            declare
+               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
+            begin
+               if not Execute_Build (Package_Name, Image (Cmd.Run_Profile)) then
+                  raise Execute_Error with "run build failed";
+               end if;
+
+               declare
+                  Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Run_Profile), Package_Name);
+               begin
+                  if not Execute_Target (Exec_Name, Cmd.Args) then
+                     raise Execute_Error with "run failed";
+                  end if;
+               end;
+            end;
+         when Test =>
+            declare
+               Package_Name : constant String := Config.Read ("tada.toml").Sections ("package") ("name");
+               Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
+            begin
+               if not Execute_Build (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
+                  raise Execute_Error with "test build failed";
+               end if;
+
+               if not Execute_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
+               then
+                  raise Execute_Error with "tests failed";
+               end if;
+            end;
          when Version =>
             Text_IO.Put_Line (Tada.Version);
       end case;
