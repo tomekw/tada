@@ -305,13 +305,13 @@ package body Tada.Commands is
             raise Execute_Error with "unable to create '" & Package_Full_Cache_Path & "'";
       end;
 
-      Copy_File (Full_Name ("tada.toml"),
-                 Compose (Package_Full_Cache_Path, Simple_Name ("tada.toml")));
-      Copy_File (Full_Name (Package_Name & ".gpr"),
-                 Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & ".gpr")));
-      Copy_File (Full_Name (Package_Name & "_config.gpr"),
-                 Compose (Package_Full_Cache_Path, Simple_Name (Package_Name & "_config.gpr")));
+      Copy_File ("tada.toml", Compose (Package_Full_Cache_Path, "tada.toml"));
+      Copy_File (Package_Name & ".gpr", Compose (Package_Full_Cache_Path, Package_Name & ".gpr"));
+      Copy_File (Package_Name & "_config.gpr", Compose (Package_Full_Cache_Path, Package_Name & "_config.gpr"));
       --  TODO: Copy src/
+
+      Text_IO.Put_Line ("Cached package '" & Package_Name & "', version '" & Package_Version &
+                        "' at '" & Package_Full_Cache_Path & "'");
    exception
       when E : others =>
          Delete_Tree (Package_Name_Cache_Path);
