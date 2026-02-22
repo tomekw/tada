@@ -284,6 +284,39 @@ package body Tada.Commands is
       end if;
    end Execute_Build;
 
+   procedure Copy_Tree (Source_Path : String; Target_Path : String) is
+      use Directories;
+
+      Tree_Search : Search_Type;
+      Search_Item : Directory_Entry_Type;
+      Search_Filter : constant Filter_Type := [Ordinary_File => True,
+                                               Directory => True,
+                                               Special_File => False];
+   begin
+      Create_Directory (Target_Path);
+      Start_Search (Tree_Search, Source_Path, "", Search_Filter);
+
+      while More_Entries (Tree_Search) loop
+         Get_Next_Entry (Tree_Search, Search_Item);
+
+         declare
+            Entry_Name : constant String := Simple_Name (Search_Item);
+         begin
+            if Kind (Search_Item) = Ordinary_File then
+               Copy_File (Full_Name (Search_Item), Compose (Target_Path, Entry_Name));
+            elsif Kind (Search_Item) = Directory and then
+                  Entry_Name /= "." and then
+                  Entry_Name /= ".."
+            then
+               Copy_Tree (Compose (Source_Path, Entry_Name), Compose (Target_Path, Entry_Name));
+            end if;
+         end;
+      end loop;
+      Text_IO.Put_Line ("Copied '" & Source_Path & "' to '" & Target_Path & "'");
+
+      End_Search (Tree_Search);
+   end Copy_Tree;
+
    procedure Execute_Cache is
       use Directories;
 
@@ -298,31 +331,33 @@ package body Tada.Commands is
       end if;
 
       begin
-         Create_Path (Package_Cache_Path);
+         begin
+            Create_Path (Package_Cache_Path);
+         exception
+            when Use_Error =>
+               raise Execute_Error with "unable to create '" & Package_Cache_Path & "'";
+         end;
+
+         Copy_File ("tada.toml", Compose (Package_Cache_Path, "tada.toml"));
+         Text_IO.Put_Line ("Copied 'tada.toml' to '" & Package_Cache_Path & "'");
+
+         Copy_File (Package_Name & ".gpr", Compose (Package_Cache_Path, Package_Name & ".gpr"));
+         Text_IO.Put_Line ("Copied '" & Package_Name & ".gpr' to '" & Package_Cache_Path & "'");
+
+         Copy_File (Package_Name & "_config.gpr", Compose (Package_Cache_Path, Package_Name & "_config.gpr"));
+         Text_IO.Put_Line ("Copied '" & Package_Name & "_config.gpr' to '" & Package_Cache_Path & "'");
+
+         Copy_Tree ("src", Compose (Package_Cache_Path, "src"));
+
+         Text_IO.New_Line;
+         Text_IO.Put_Line ("Cached package '" & Package_Name & "', version '" & Package_Version &
+                           "' at '" & Package_Cache_Path & "'");
       exception
-         when Use_Error =>
-            raise Execute_Error with "unable to create '" & Package_Cache_Path & "'";
+         when E : others =>
+            Delete_Tree (Package_Cache_Path);
+
+            raise Execute_Error with Exceptions.Exception_Message (E);
       end;
-
-      Copy_File ("tada.toml", Compose (Package_Cache_Path, "tada.toml"));
-      Text_IO.Put_Line ("Copied 'tada.toml' to '" & Package_Cache_Path & "'");
-
-      Copy_File (Package_Name & ".gpr", Compose (Package_Cache_Path, Package_Name & ".gpr"));
-      Text_IO.Put_Line ("Copied '" & Package_Name & ".gpr' to '" & Package_Cache_Path & "'");
-
-      Copy_File (Package_Name & "_config.gpr", Compose (Package_Cache_Path, Package_Name & "_config.gpr"));
-      Text_IO.Put_Line ("Copied '" & Package_Name & "_config.gpr' to '" & Package_Cache_Path & "'");
-
-      --  TODO: Copy src/
-
-      Text_IO.New_Line;
-      Text_IO.Put_Line ("Cached package '" & Package_Name & "', version '" & Package_Version &
-                        "' at '" & Package_Cache_Path & "'");
-   exception
-      when E : others =>
-         Delete_Tree (Package_Cache_Path);
-
-         raise Execute_Error with Exceptions.Exception_Message (E);
    end Execute_Cache;
 
    procedure Execute_Clean is
