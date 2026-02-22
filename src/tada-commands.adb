@@ -305,10 +305,17 @@ package body Tada.Commands is
       end;
 
       Copy_File ("tada.toml", Compose (Package_Cache_Path, "tada.toml"));
+      Text_IO.Put_Line ("Copied 'tada.toml' to '" & Package_Cache_Path & "'");
+
       Copy_File (Package_Name & ".gpr", Compose (Package_Cache_Path, Package_Name & ".gpr"));
+      Text_IO.Put_Line ("Copied '" & Package_Name & ".gpr' to '" & Package_Cache_Path & "'");
+
       Copy_File (Package_Name & "_config.gpr", Compose (Package_Cache_Path, Package_Name & "_config.gpr"));
+      Text_IO.Put_Line ("Copied '" & Package_Name & "_config.gpr' to '" & Package_Cache_Path & "'");
+
       --  TODO: Copy src/
 
+      Text_IO.New_Line;
       Text_IO.Put_Line ("Cached package '" & Package_Name & "', version '" & Package_Version &
                         "' at '" & Package_Cache_Path & "'");
    exception
