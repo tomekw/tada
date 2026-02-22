@@ -290,31 +290,30 @@ package body Tada.Commands is
       Tada_Manifest : constant Config.Manifest := Config.Read ("tada.toml");
       Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
       Package_Version : constant String := Tada_Manifest.Sections ("package") ("version");
-      Package_Name_Cache_Path : constant String := Compose (Tada_Cache_Path, Package_Name);
-      Package_Full_Cache_Path : constant String := Compose (Package_Name_Cache_Path, Package_Version);
+      Package_Cache_Path : constant String := Compose (Compose (Tada_Cache_Path, Package_Name), Package_Version);
    begin
-      if Exists (Package_Full_Cache_Path) then
+      if Exists (Package_Cache_Path) then
          raise Execute_Error with "package '" & Package_Name & "', version '" & Package_Version &
-                                  "' already cached at '" & Package_Full_Cache_Path & "'";
+                                  "' already cached at '" & Package_Cache_Path & "'";
       end if;
 
       begin
-         Create_Path (Package_Full_Cache_Path);
+         Create_Path (Package_Cache_Path);
       exception
          when Use_Error =>
-            raise Execute_Error with "unable to create '" & Package_Full_Cache_Path & "'";
+            raise Execute_Error with "unable to create '" & Package_Cache_Path & "'";
       end;
 
-      Copy_File ("tada.toml", Compose (Package_Full_Cache_Path, "tada.toml"));
-      Copy_File (Package_Name & ".gpr", Compose (Package_Full_Cache_Path, Package_Name & ".gpr"));
-      Copy_File (Package_Name & "_config.gpr", Compose (Package_Full_Cache_Path, Package_Name & "_config.gpr"));
+      Copy_File ("tada.toml", Compose (Package_Cache_Path, "tada.toml"));
+      Copy_File (Package_Name & ".gpr", Compose (Package_Cache_Path, Package_Name & ".gpr"));
+      Copy_File (Package_Name & "_config.gpr", Compose (Package_Cache_Path, Package_Name & "_config.gpr"));
       --  TODO: Copy src/
 
       Text_IO.Put_Line ("Cached package '" & Package_Name & "', version '" & Package_Version &
-                        "' at '" & Package_Full_Cache_Path & "'");
+                        "' at '" & Package_Cache_Path & "'");
    exception
       when E : others =>
-         Delete_Tree (Package_Name_Cache_Path);
+         Delete_Tree (Package_Cache_Path);
 
          raise Execute_Error with Exceptions.Exception_Message (E);
    end Execute_Cache;
