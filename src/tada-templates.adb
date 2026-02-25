@@ -3,6 +3,49 @@ with Ada.Characters.Handling;
 with Tada.Package_Cache;
 
 package body Tada.Templates is
+   procedure Emit
+     (Path : String;
+      Write : access procedure (File : File_Type;
+                                Name : String);
+      Name : String)
+   is
+      File : File_Type;
+   begin
+      Create (File, Out_File, Path);
+      Write (File, Name);
+      Close (File);
+   end Emit;
+
+   procedure Emit
+     (Path : String;
+      Write : access procedure (File : File_Type;
+                                Name : String;
+                                Kind : Package_Kind);
+      Name : String;
+      Kind : Package_Kind)
+   is
+      File : File_Type;
+   begin
+      Create (File, Out_File, Path);
+      Write (File, Name, Kind);
+      Close (File);
+   end Emit;
+
+   procedure Emit
+     (Path : String;
+      Write : access procedure (File : File_Type;
+                                Name : String;
+                                Deps : Package_Info_Vectors.Vector);
+      Name : String;
+      Deps : Package_Info_Vectors.Vector)
+   is
+      File : File_Type;
+   begin
+      Create (File, Out_File, Path);
+      Write (File, Name, Deps);
+      Close (File);
+   end Emit;
+
    function Mixed_Case (Name : String) return String is
       Result : String := Name;
       Cap_Next : Boolean := True;

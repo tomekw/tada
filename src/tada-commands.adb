@@ -266,6 +266,7 @@ package body Tada.Commands is
 
    procedure Generate_Deps is
       use Packages;
+      use Templates;
 
       Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
 
@@ -338,7 +339,6 @@ package body Tada.Commands is
             Dep : constant Package_Info := Package_Info_Maps.Element (C);
             Dep_Manifest : constant Config.Manifest := Config.Read (Package_Cache.Manifest_Path (Dep));
             Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
-            F : Text_IO.File_Type;
          begin
             if Dep_Manifest.Sections.Contains ("dependencies") then
                for D in Dep_Manifest.Sections ("dependencies").Iterate loop
@@ -350,9 +350,7 @@ package body Tada.Commands is
                end loop;
             end if;
 
-            Text_IO.Create (F, Text_IO.Out_File, Package_Cache.GPR_Deps_Path (Dep));
-            Templates.Write_GPR_Deps (F, Dep.Name, Deps_To_Write);
-            Text_IO.Close (F);
+            Emit (Package_Cache.GPR_Deps_Path (Dep), Write_GPR_Deps'Access, Dep.Name, Deps_To_Write);
          end;
       end loop;
 
@@ -362,7 +360,6 @@ package body Tada.Commands is
             Tada_Manifest.Sections ("package") ("version"));
 
          Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
-         F : Text_IO.File_Type;
       begin
          if Tada_Manifest.Sections.Contains ("dependencies") then
             for C in Tada_Manifest.Sections ("dependencies").Iterate loop
@@ -374,9 +371,7 @@ package body Tada.Commands is
             end loop;
          end if;
 
-         Text_IO.Create (F, Text_IO.Out_File, Tada_Package.GPR_Deps_Name);
-         Templates.Write_GPR_Deps (F, Tada_Package.Name, Deps_To_Write);
-         Text_IO.Close (F);
+         Emit (Tada_Package.GPR_Deps_Name, Write_GPR_Deps'Access, Tada_Package.Name, Deps_To_Write);
       end;
    end Generate_Deps;
 
@@ -492,6 +487,7 @@ package body Tada.Commands is
 
    procedure Execute_Init (Cmd : Command) is
       use Directories;
+      use Templates;
 
       New_Package : constant Packages.Package_Info := Packages.Create (To_String (Cmd.Package_Name), "0.1.0");
       Root : constant String := Full_Name (New_Package.Name);
@@ -506,135 +502,26 @@ package body Tada.Commands is
       Create_Directory (Compose (Root, "src"));
       Create_Directory (Compose (Root, "tests"));
 
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, "README.md"));
-         Templates.Write_Readme (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, Packages.Manifest_Name));
-         Templates.Write_Manifest (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, ".gitignore"));
-         Templates.Write_Gitignore (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package.GPR_Name));
-         Templates.Write_GPR_Main (F, New_Package.Name, Cmd.Package_Type);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package.GPR_Config_Name));
-         Templates.Write_GPR_Config (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package.GPR_Deps_Name));
-         Templates.Write_GPR_Deps (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Root, New_Package.GPR_Tests_Name));
-         Templates.Write_GPR_Tests (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), "run_tests.adb"));
-         Templates.Write_Test_Runner (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.ads"));
-         Templates.Write_Test_Suite_Spec (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.adb"));
-         Templates.Write_Test_Suite_Body (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package.Name &  "_test.ads"));
-         Templates.Write_Test_Spec (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "tests"), New_Package.Name &  "_test.adb"));
-         Templates.Write_Test_Body (F, New_Package.Name);
-         Text_IO.Close (F);
-      end;
-
-      declare
-         F : Text_IO.File_Type;
-      begin
-         Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package.Name & ".ads"));
-         Templates.Write_Root_Package_Spec (F, New_Package.Name, Cmd.Package_Type);
-         Text_IO.Close (F);
-      end;
+      Emit (Compose (Root, "README.md"), Write_Readme'Access, New_Package.Name);
+      Emit (Compose (Root, Packages.Manifest_Name), Write_Manifest'Access, New_Package.Name);
+      Emit (Compose (Root, ".gitignore"), Write_Gitignore'Access, New_Package.Name);
+      Emit (Compose (Root, New_Package.GPR_Name), Write_GPR_Main'Access, New_Package.Name, Cmd.Package_Type);
+      Emit (Compose (Root, New_Package.GPR_Config_Name), Write_GPR_Config'Access, New_Package.Name);
+      Emit (Compose (Root, New_Package.GPR_Deps_Name), Write_GPR_Deps'Access, New_Package.Name, Package_Info_Vectors.Empty_Vector);
+      Emit (Compose (Root, New_Package.GPR_Tests_Name), Write_GPR_Tests'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), "run_tests.adb"), Write_Test_Runner'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.ads"), Write_Test_Suite_Spec'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.adb"), Write_Test_Suite_Body'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.ads"), Write_Test_Spec'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.adb"), Write_Test_Body'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "src"), New_Package.Name &  ".ads"), Write_Root_Package_Spec'Access, New_Package.Name, Cmd.Package_Type);
 
       case Cmd.Package_Type is
          when Exe =>
-            declare
-               F : Text_IO.File_Type;
-            begin
-               Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package.Name & "-main.ads"));
-               Templates.Write_Main_Spec (F, New_Package.Name);
-               Text_IO.Close (F);
-            end;
-
-            declare
-               F : Text_IO.File_Type;
-            begin
-               Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package.Name & "-main.adb"));
-               Templates.Write_Main_Body (F, New_Package.Name);
-               Text_IO.Close (F);
-            end;
+            Emit (Compose (Compose (Root, "src"), New_Package.Name &  "-main.ads"), Write_Main_Spec'Access, New_Package.Name);
+            Emit (Compose (Compose (Root, "src"), New_Package.Name &  "-main.adb"), Write_Main_Body'Access, New_Package.Name);
          when Lib =>
-            declare
-               F : Text_IO.File_Type;
-            begin
-               Text_IO.Create (F, Text_IO.Out_File, Compose (Compose (Root, "src"), New_Package.Name & ".adb"));
-               Templates.Write_Root_Package_Body (F, New_Package.Name);
-               Text_IO.Close (F);
-            end;
+            Emit (Compose (Compose (Root, "src"), New_Package.Name &  ".adb"), Write_Root_Package_Body'Access, New_Package.Name);
       end case;
    exception
       when E : others =>

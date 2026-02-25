@@ -7,6 +7,28 @@ package Tada.Templates is
    use Ada.Text_IO;
    use Tada.Packages.Containers;
 
+   procedure Emit
+     (Path : String;
+      Write : access procedure (File : File_Type;
+                                Name : String);
+      Name : String);
+
+   procedure Emit
+     (Path : String;
+      Write : access procedure (File : File_Type;
+                                Name : String;
+                                Kind : Package_Kind);
+      Name : String;
+      Kind : Package_Kind);
+
+   procedure Emit
+     (Path : String;
+      Write : access procedure (File : File_Type;
+                                Name : String;
+                                Deps : Package_Info_Vectors.Vector);
+      Name : String;
+      Deps : Package_Info_Vectors.Vector);
+
    procedure Write_Readme (File : File_Type; Name : String);
 
    procedure Write_Manifest (File : File_Type; Name : String);
