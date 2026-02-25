@@ -1,7 +1,7 @@
 with Ada.Containers.Indefinite_Holders;
 
 package Tada is
-   Version : constant String := "0.3.0";
+   Version : constant String := "0.4.0";
 
    type Package_Kind is (Exe,
                          Lib);
