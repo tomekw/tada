@@ -4,16 +4,16 @@ with AUnit.Test_Cases; use AUnit.Test_Cases;
 with Ada.Containers.Indefinite_Hashed_Maps;
 with Ada.Strings.Hash;
 
-with Tada.Config;
+with Tada.Packages;
 
-package body Tada_Config_Tests is
+package body Tada_Packages_Tests is
    use Ada;
    use Tada;
 
    overriding
    function Name (Unused_T : Test_Case) return Message_String is
    begin
-      return Format ("Tada.Config");
+      return Format ("Tada.Packages");
    end Name;
 
    overriding
@@ -31,6 +31,7 @@ package body Tada_Config_Tests is
    procedure Test_Validate_Package_Names (Unused_T : in out Test_Cases.Test_Case'Class) is
       Names : constant Package_Names_To_Valid.Map :=
         ["hello" => True,
+         "Hello" => False,
          "hello_world" => True,
          "a" => True,
          "a1" => True,
@@ -52,9 +53,9 @@ package body Tada_Config_Tests is
             Package_Name : constant String := Package_Names_To_Valid.Key (C);
             Validity : constant Boolean := Package_Names_To_Valid.Element (C);
          begin
-            Assert (Config.Valid_Package_Name (Package_Name) = Validity,
+            Assert (Packages.Is_Valid_Name (Package_Name) = Validity,
                     "Expected: '" & Package_Name & "' to be: " & Validity'Image);
          end;
       end loop;
    end Test_Validate_Package_Names;
-end Tada_Config_Tests;
+end Tada_Packages_Tests;

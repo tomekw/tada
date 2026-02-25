@@ -1,5 +1,9 @@
 ## unreleased
 
+* local (cached) dependencies support
+* add `tada cache` command: add package to the local cache
+* breaking: scaffold empty `PACKAGE_deps.gpr` file
+
 ## 0.3.0
 
 * breaking: change `tada.toml` format

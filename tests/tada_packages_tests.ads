@@ -1,6 +1,6 @@
 with AUnit.Test_Cases;
 
-package Tada_Config_Tests is
+package Tada_Packages_Tests is
    use AUnit;
 
    type Test_Case is new Test_Cases.Test_Case with null record;
@@ -14,4 +14,4 @@ package Tada_Config_Tests is
 private
 
    procedure Test_Validate_Package_Names (Unused_T : in out Test_Cases.Test_Case'Class);
-end Tada_Config_Tests;
+end Tada_Packages_Tests;

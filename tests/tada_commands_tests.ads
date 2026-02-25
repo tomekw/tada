@@ -54,4 +54,6 @@ private
    procedure Test_Parse_Init_Name_Camel (Unused_T : in out Test_Cases.Test_Case'Class);
 
    procedure Test_Parse_Init_Name_Package (Unused_T : in out Test_Cases.Test_Case'Class);
+
+   procedure Test_Parse_Cache (Unused_T : in out Test_Cases.Test_Case'Class);
 end Tada_Commands_Tests;

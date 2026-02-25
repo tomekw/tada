@@ -1,90 +1,15 @@
 with Ada.Characters.Handling;
-with Ada.Containers.Indefinite_Vectors;
 with Ada.Strings.Fixed;
-with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 
+with Tada.Packages;
+
 package body Tada.Config is
-   use Ada.Strings.Unbounded;
-
-   package String_Vectors is new Containers.Indefinite_Vectors
-     (Index_Type   => Positive,
-      Element_Type => String);
-
-   Reserved_Words : constant String_Vectors.Vector :=
-     ["abort", "abs", "abstract", "accept", "access", "aliased", "all", "and", "array", "at",
-       "begin", "body",
-       "case", "constant",
-       "declare", "delay", "delta", "digits", "do",
-       "else", "elsif", "end", "entry", "exception",
-       "exit",
-       "for", "function",
-       "generic", "goto",
-       "if", "in", "interface", "is",
-       "limited", "loop",
-       "mod",
-       "new", "not", "null",
-       "of", "or", "others", "out", "overriding",
-       "package", "parallel", "pragma", "private",
-       "procedure", "protected",
-       "raise", "range", "record", "rem", "renames",
-       "requeue", "return", "reverse",
-       "select", "separate", "some", "subtype",
-       "synchronized",
-       "tagged", "task", "terminate", "then", "type",
-       "until", "use",
-       "when", "while", "with",
-       "xor"];
-
-   function Is_Reserved_Word (Name : String) return Boolean is
-      use Ada.Characters.Handling;
-
-      Lower_Name : constant String := To_Lower (Name);
-   begin
-      for Word of Reserved_Words loop
-         if Lower_Name = Word then
-            return True;
-         end if;
-      end loop;
-
-      return False;
-   end Is_Reserved_Word;
-
-   function Valid_Package_Name (Name : String) return Boolean is
-      use Characters.Handling;
-
-      Underscore : constant Character := '_';
-   begin
-      if Name'Length = 0 or else
-         not Is_Letter (Name (Name'First)) or else
-         not Is_Alphanumeric (Name (Name'Last)) or else
-         Is_Reserved_Word (Name)
-      then
-         return False;
-      else
-         for I in Name'First .. Name'Last - 1 loop
-            if not (Is_Alphanumeric (Name (I)) or else
-                    Name (I) = Underscore)
-            then
-               return False;
-            end if;
-
-            if Name (I) = Underscore and then
-               Name (I + 1) = Underscore
-            then
-               return False;
-            end if;
-         end loop;
-      end if;
-
-      return True;
-   end Valid_Package_Name;
-
    function Read (Manifest_Path : String) return Manifest is
       Manifest_File : Text_IO.File_Type;
       Tada_Manifest : Manifest;
 
-      Current_Section : Unbounded_String;
+      Current_Section : String_Holders.Holder;
       Line_Number : Natural := 0;
 
       procedure Validate is
@@ -115,7 +40,7 @@ package body Tada.Config is
             declare
                Package_Name : constant String := Package_Section ("name");
             begin
-               if not Valid_Package_Name (Package_Name) then
+               if not Packages.Is_Valid_Name (Package_Name) then
                   raise Manifest_Error with "invalid package name '" & Package_Name & "'";
                end if;
             end;
@@ -145,7 +70,7 @@ package body Tada.Config is
                   declare
                      Dependency_Name : constant String := String_Maps.Key (C);
                   begin
-                     if not Valid_Package_Name (Dependency_Name) then
+                     if not Packages.Is_Valid_Name (Dependency_Name) then
                         raise Manifest_Error with "invalid dependency name '" & Dependency_Name & "'";
                      end if;
                   end;
@@ -174,17 +99,17 @@ package body Tada.Config is
                   Line (Line'Last) = ']'
                then
                   declare
-                     Section_Name : constant String := Line (Line'First + 1 .. Line'Last - 1);
+                     Section_Name : constant String := Characters.Handling.To_Lower (Line (Line'First + 1 .. Line'Last - 1));
                   begin
                      if Tada_Manifest.Sections.Contains (Section_Name) then
                         raise Manifest_Error with Line_Info & "duplicate section [" & Section_Name & "]";
                      end if;
 
-                     Current_Section := To_Unbounded_String (Section_Name);
+                     Current_Section := String_Holders.To_Holder (Section_Name);
                      Tada_Manifest.Sections.Insert (Section_Name, String_Maps.Empty_Map);
                   end;
                else
-                  if Length (Current_Section) = 0 then
+                  if Current_Section.Is_Empty then
                      raise Manifest_Error with Line_Info & "key outside of section";
                   end if;
 
@@ -214,7 +139,7 @@ package body Tada.Config is
 
                         declare
                            Value : constant String := Raw_Value (Raw_Value'First + 1 .. Raw_Value'Last - 1);
-                           Section : constant String := To_String (Current_Section);
+                           Section : constant String := Current_Section.Element;
                         begin
                            if Tada_Manifest.Sections (Section).Contains (Key) then
                               raise Manifest_Error with Line_Info & "duplicate key '" & Key & "' in [" & Section & "]";

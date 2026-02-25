@@ -24,6 +24,4 @@ package Tada.Config is
    end record;
 
    function Read (Manifest_Path : String) return Manifest;
-
-   function Valid_Package_Name (Name : String) return Boolean;
 end Tada.Config;
