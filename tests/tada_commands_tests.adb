@@ -1,14 +1,10 @@
 with AUnit.Assertions; use AUnit.Assertions;
 with AUnit.Test_Cases; use AUnit.Test_Cases;
 
-with Ada.Strings.Unbounded;
-
 with Tada.CL_Arguments;
 with Tada.Commands;
 
 package body Tada_Commands_Tests is
-   use Ada.Strings.Unbounded;
-
    use Tada;
    use Tada.CL_Arguments;
    use Tada.Commands;
@@ -184,7 +180,7 @@ package body Tada_Commands_Tests is
       Args : constant Argument_List.Vector := ["init", "hello"];
    begin
       Assert (Commands.Parse (Args) = (Kind => Init,
-                                       Package_Name => To_Unbounded_String ("hello"),
+                                       Package_Name => String_Holders.To_Holder ("hello"),
                                        Package_Type => Exe),
               "Expected command: Init, name: hello, kind: exe");
    end Test_Parse_Init_Name;
@@ -193,7 +189,7 @@ package body Tada_Commands_Tests is
       Args : constant Argument_List.Vector := ["init", "hello", "--exe"];
    begin
       Assert (Commands.Parse (Args) = (Kind => Init,
-                                       Package_Name => To_Unbounded_String ("hello"),
+                                       Package_Name => String_Holders.To_Holder ("hello"),
                                        Package_Type => Exe),
               "Expected command: Init, name: hello, kind: exe");
    end Test_Parse_Init_Name_Exe;
@@ -202,7 +198,7 @@ package body Tada_Commands_Tests is
       Args : constant Argument_List.Vector := ["init", "hello", "--lib"];
    begin
       Assert (Commands.Parse (Args) = (Kind => Init,
-                                       Package_Name => To_Unbounded_String ("hello"),
+                                       Package_Name => String_Holders.To_Holder ("hello"),
                                        Package_Type => Lib),
               "Expected command: Init, name: hello, kind: lib");
    end Test_Parse_Init_Name_Lib;
@@ -223,7 +219,7 @@ package body Tada_Commands_Tests is
       Args : constant Argument_List.Vector := ["init", "cAmEl"];
    begin
       Assert (Commands.Parse (Args) = (Kind => Init,
-                                       Package_Name => To_Unbounded_String ("camel"),
+                                       Package_Name => String_Holders.To_Holder ("camel"),
                                        Package_Type => Exe),
               "Expected command: Init, name: camel, kind: exe");
    end Test_Parse_Init_Name_Camel;

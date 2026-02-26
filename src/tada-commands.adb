@@ -2,6 +2,7 @@ with Ada.Characters.Handling;
 with Ada.Characters.Latin_1;
 with Ada.Directories;
 with Ada.Exceptions;
+with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
@@ -156,7 +157,7 @@ package body Tada.Commands is
                return (Kind => Help);
             when Init =>
                return (Kind => Init,
-                       Package_Name => To_Unbounded_String (Parse_Package_Name (Arguments)),
+                       Package_Name => String_Holders.To_Holder (Parse_Package_Name (Arguments)),
                        Package_Type => Parse_Package_Type (Arguments));
             when Run =>
                return (Kind => Run,
@@ -319,6 +320,8 @@ package body Tada.Commands is
 
       if not Missing_Deps.Is_Empty then
          declare
+            use Ada.Strings.Unbounded;
+
             Error_Message_Builder : Unbounded_String := To_Unbounded_String ("missing dependencies:" & Characters.Latin_1.LF);
          begin
             for C in Missing_Deps.Iterate loop
@@ -489,7 +492,7 @@ package body Tada.Commands is
       use Directories;
       use Templates;
 
-      New_Package : constant Packages.Package_Info := Packages.Create (To_String (Cmd.Package_Name), "0.1.0");
+      New_Package : constant Packages.Package_Info := Packages.Create (Cmd.Package_Name.Element, "0.1.0");
       Root : constant String := Full_Name (New_Package.Name);
    begin
       Text_IO.Put_Line ("Creating new package (" & Image (Cmd.Package_Type) & ")");

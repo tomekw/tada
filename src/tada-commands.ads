@@ -1,10 +1,6 @@
-with Ada.Strings.Unbounded;
-
 with Tada.CL_Arguments;
 
 package Tada.Commands is
-   use Ada.Strings.Unbounded;
-
    Parse_Error : exception;
    Execute_Error : exception;
 
@@ -25,7 +21,7 @@ package Tada.Commands is
          when Build =>
             Build_Profile : Profile_Kind;
          when Init =>
-            Package_Name : Unbounded_String;
+            Package_Name : String_Holders.Holder;
             Package_Type : Package_Kind;
          when Run =>
             Run_Profile : Profile_Kind;
