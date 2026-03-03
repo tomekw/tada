@@ -2,8 +2,7 @@ with AUnit.Run;
 with AUnit.Reporter.Text;
 with Tada_Suite;
 
-procedure Run_Tests is
-
+procedure Tests_Main is
    procedure Runner is new AUnit.Run.Test_Runner
      (Tada_Suite.Suite);
 
@@ -11,4 +10,4 @@ procedure Run_Tests is
 
 begin
    Runner (Reporter);
-end Run_Tests;
+end Tests_Main;

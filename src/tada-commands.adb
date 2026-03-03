@@ -512,7 +512,7 @@ package body Tada.Commands is
       Emit (Compose (Root, New_Package.GPR_Config_Name), Write_GPR_Config'Access, New_Package.Name);
       Emit (Compose (Root, New_Package.GPR_Deps_Name), Write_GPR_Deps'Access, New_Package.Name, Package_Info_Vectors.Empty_Vector);
       Emit (Compose (Root, New_Package.GPR_Tests_Name), Write_GPR_Tests'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), "run_tests.adb"), Write_Test_Runner'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), "tests_main.adb"), Write_Test_Runner'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.ads"), Write_Test_Suite_Spec'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.adb"), Write_Test_Suite_Body'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.ads"), Write_Test_Spec'Access, New_Package.Name);
@@ -555,7 +555,7 @@ package body Tada.Commands is
 
    procedure Execute_Test (Cmd : Command) is
       Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
-      Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "run_tests");
+      Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "tests");
    begin
       Generate_Deps;
 

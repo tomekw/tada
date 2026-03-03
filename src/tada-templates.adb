@@ -195,7 +195,11 @@ package body Tada.Templates is
       Put_Line (File, "   for Source_Dirs use (""tests"");");
       Put_Line (File, "   for Object_Dir use ""target/"" & " & MC & "_Config.Build_Profile & ""/obj-tests"";");
       Put_Line (File, "   for Exec_Dir use ""target/"" & " & MC & "_Config.Build_Profile & ""/bin"";");
-      Put_Line (File, "   for Main use (""run_tests.adb"");");
+      Put_Line (File, "   for Main use (""tests_main.adb"");");
+      Put_Line (File, "");
+      Put_Line (File, "   package Builder is");
+      Put_Line (File, "      for Executable (""tests_main.adb"") use ""tests"";");
+      Put_Line (File, "   end Builder;");
       Put_Line (File, "");
       Put_Line (File, "   package Compiler is");
       Put_Line (File, "      for Default_Switches (""Ada"") use");
@@ -217,16 +221,14 @@ package body Tada.Templates is
       Put_Line (File, "with AUnit.Reporter.Text;");
       Put_Line (File, "with " & MC & "_Suite;");
       Put_Line (File, "");
-      Put_Line (File, "procedure Run_Tests is");
-      Put_Line (File, "");
+      Put_Line (File, "procedure Tests_Main is");
       Put_Line (File, "   procedure Runner is new AUnit.Run.Test_Runner");
       Put_Line (File, "     (" & MC & "_Suite.Suite);");
       Put_Line (File, "");
       Put_Line (File, "   Reporter : AUnit.Reporter.Text.Text_Reporter;");
-      Put_Line (File, "");
       Put_Line (File, "begin");
       Put_Line (File, "   Runner (Reporter);");
-      Put_Line (File, "end Run_Tests;");
+      Put_Line (File, "end Tests_Main;");
    end Write_Test_Runner;
 
    procedure Write_Test_Suite_Spec (File : File_Type; Name : String) is

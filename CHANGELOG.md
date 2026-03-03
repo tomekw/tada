@@ -1,5 +1,7 @@
 ## unreleased
 
+* breaking: test runner executable renamed to `tests`
+
 ## 0.4.0
 
 * local (cached) dependencies support
