@@ -189,7 +189,6 @@ package body Tada.Templates is
       Put_Line (File, "with """ & Name & "_config.gpr"";");
       Put_Line (File, "with """ & Name & "_tests_deps.gpr"";");
       Put_Line (File, "with """ & Name & ".gpr"";");
-      Put_Line (File, "with ""aunit.gpr"";");
       Put_Line (File, "");
       Put_Line (File, "project " & MC & "_Tests is");
       Put_Line (File, "   for Source_Dirs use (""tests"");");
@@ -213,107 +212,48 @@ package body Tada.Templates is
       Put_Line (File, "end " & MC & "_Tests;");
    end Write_GPR_Tests;
 
-   procedure Write_Test_Runner (File : File_Type; Name : String) is
+   procedure Write_Tests_Runner (File : File_Type; Name : String) is
       MC : constant String := Mixed_Case (Name);
    begin
-      Put_Line (File, "with AUnit.Run;");
-      Put_Line (File, "with AUnit.Reporter.Text;");
-      Put_Line (File, "with " & MC & "_Suite;");
+      Put_Line (File, "with Testy.Runners;");
+      Put_Line (File, "with Testy.Reporters.Text;");
+      Put_Line (File, "");
+      Put_Line (File, "with " & MC & "_Tests;");
       Put_Line (File, "");
       Put_Line (File, "procedure Tests_Main is");
-      Put_Line (File, "   procedure Runner is new AUnit.Run.Test_Runner");
-      Put_Line (File, "     (" & MC & "_Suite.Suite);");
+      Put_Line (File, "   use Testy;");
       Put_Line (File, "");
-      Put_Line (File, "   Reporter : AUnit.Reporter.Text.Text_Reporter;");
+      Put_Line (File, "   Test_Runner : Runners.Runner := Runners.Create;");
+      Put_Line (File, "   Test_Reporter : Reporters.Text.Text_Reporter;");
       Put_Line (File, "begin");
-      Put_Line (File, "   Runner (Reporter);");
+      Put_Line (File, "   Test_Runner.Add (""True is True"", " & MC & "_Tests.True_Is_True'Access);");
+      Put_Line (File, "");
+      Put_Line (File, "   Test_Runner.Run (Test_Reporter);");
       Put_Line (File, "end Tests_Main;");
-   end Write_Test_Runner;
+   end Write_Tests_Runner;
 
-   procedure Write_Test_Suite_Spec (File : File_Type; Name : String) is
+   procedure Write_Tests_Spec (File : File_Type; Name : String) is
       MC : constant String := Mixed_Case (Name);
    begin
-      Put_Line (File, "with AUnit.Test_Suites;");
+      Put_Line (File, "with Testy.Tests;");
       Put_Line (File, "");
-      Put_Line (File, "package " & MC & "_Suite is");
-      Put_Line (File, "   function Suite return AUnit.Test_Suites.Access_Test_Suite;");
-      Put_Line (File, "end " & MC & "_Suite;");
-   end Write_Test_Suite_Spec;
+      Put_Line (File, "package " & MC & "_Tests is");
+      Put_Line (File, "   use Testy.Tests;");
+      Put_Line (File, "");
+      Put_Line (File, "   procedure True_Is_True (T : in out Test_Context);");
+      Put_Line (File, "end " & MC & "_Tests;");
+   end Write_Tests_Spec;
 
-   procedure Write_Test_Suite_Body (File : File_Type; Name : String) is
+   procedure Write_Tests_Body (File : File_Type; Name : String) is
       MC : constant String := Mixed_Case (Name);
    begin
-      Put_Line (File, "with " & MC & "_Test;");
-      Put_Line (File, "");
-      Put_Line (File, "package body " & MC & "_Suite is");
-      Put_Line (File, "   Result : aliased AUnit.Test_Suites.Test_Suite;");
-      Put_Line (File, "   Test_1 : aliased " & MC & "_Test.Test_Case;");
-      Put_Line (File, "");
-      Put_Line (File, "   function Suite return AUnit.Test_Suites.Access_Test_Suite is");
+      Put_Line (File, "package body " & MC & "_Tests is");
+      Put_Line (File, "   procedure True_Is_True (T : in out Test_Context) is");
       Put_Line (File, "   begin");
-      Put_Line (File, "      AUnit.Test_Suites.Add_Test");
-      Put_Line (File, "        (Result'Access, Test_1'Access);");
-      Put_Line (File, "      return Result'Access;");
-      Put_Line (File, "   end Suite;");
-      Put_Line (File, "end " & MC & "_Suite;");
-   end Write_Test_Suite_Body;
-
-   procedure Write_Test_Spec (File : File_Type; Name : String) is
-      MC : constant String := Mixed_Case (Name);
-   begin
-      Put_Line (File, "with AUnit.Test_Cases;");
-      Put_Line (File, "");
-      Put_Line (File, "package " & MC & "_Test is");
-      Put_Line (File, "   type Test_Case is new " & "AUnit.Test_Cases.Test_Case");
-      Put_Line (File, "     with null record;");
-      Put_Line (File, "");
-      Put_Line (File, "   overriding");
-      Put_Line (File, "   function Name");
-      Put_Line (File, "     (Unused_T : Test_Case)");
-      Put_Line (File, "      return AUnit.Message_String;");
-      Put_Line (File, "");
-      Put_Line (File, "   overriding");
-      Put_Line (File, "   procedure Register_Tests (T : in out Test_Case);");
-      Put_Line (File, "");
-      Put_Line (File, "private");
-      Put_Line (File, "");
-      Put_Line (File, "   procedure Test_True");
-      Put_Line (File, "     (Unused_T : in out AUnit.Test_Cases.Test_Case'Class);");
-      Put_Line (File, "end " & MC & "_Test;");
-   end Write_Test_Spec;
-
-   procedure Write_Test_Body (File : File_Type; Name : String) is
-      MC : constant String := Mixed_Case (Name);
-   begin
-      Put_Line (File, "with AUnit.Assertions; use AUnit.Assertions;");
-      Put_Line (File, "with AUnit.Test_Cases; use AUnit.Test_Cases;");
-      Put_Line (File, "");
-      Put_Line (File, "package body " & MC & "_Test is");
-      Put_Line (File, "   overriding");
-      Put_Line (File, "   function Name");
-      Put_Line (File, "     (Unused_T : Test_Case)");
-      Put_Line (File, "      return AUnit.Message_String");
-      Put_Line (File, "   is");
-      Put_Line (File, "   begin");
-      Put_Line (File, "      return AUnit.Format (""" & MC & """);");
-      Put_Line (File, "   end Name;");
-      Put_Line (File, "");
-      Put_Line (File, "   overriding");
-      Put_Line (File, "   procedure Register_Tests (T : in out Test_Case) is");
-      Put_Line (File, "   begin");
-      Put_Line (File, "      Registration.Register_Routine");
-      Put_Line (File, "        (T, Test_True'Access,");
-      Put_Line (File, "         ""True is True"");");
-      Put_Line (File, "   end Register_Tests;");
-      Put_Line (File, "");
-      Put_Line (File, "   procedure Test_True");
-      Put_Line (File, "     (Unused_T : in out AUnit.Test_Cases.Test_Case'Class)");
-      Put_Line (File, "   is");
-      Put_Line (File, "   begin");
-      Put_Line (File, "      Assert (True, ""True is True"");");
-      Put_Line (File, "   end Test_True;");
-      Put_Line (File, "end " & MC & "_Test;");
-   end Write_Test_Body;
+      Put_Line (File, "      T.Expect (True, ""expected True"");");
+      Put_Line (File, "   end True_Is_True;");
+      Put_Line (File, "end " & MC & "_Tests;");
+   end Write_Tests_Body;
 
    procedure Write_Root_Package_Spec (File : File_Type; Name : String; Kind : Package_Kind) is
       MC : constant String := Mixed_Case (Name);

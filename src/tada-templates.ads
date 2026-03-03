@@ -43,15 +43,11 @@ package Tada.Templates is
 
    procedure Write_GPR_Tests (File : File_Type; Name : String);
 
-   procedure Write_Test_Runner (File : File_Type; Name : String);
+   procedure Write_Tests_Runner (File : File_Type; Name : String);
 
-   procedure Write_Test_Suite_Spec (File : File_Type; Name : String);
+   procedure Write_Tests_Spec (File : File_Type; Name : String);
 
-   procedure Write_Test_Suite_Body (File : File_Type; Name : String);
-
-   procedure Write_Test_Spec (File : File_Type; Name : String);
-
-   procedure Write_Test_Body (File : File_Type; Name : String);
+   procedure Write_Tests_Body (File : File_Type; Name : String);
 
    procedure Write_Root_Package_Spec (File : File_Type; Name : String; Kind : Package_Kind);
 

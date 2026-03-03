@@ -521,7 +521,7 @@ package body Tada.Commands is
       Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
       Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
       Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
-      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
+      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the tests");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
       Text_IO.Put_Line ("    cache                               Add package to the local cache");
       Text_IO.Put_Line ("    help                                Show this message");
@@ -553,11 +553,9 @@ package body Tada.Commands is
       Emit (Compose (Root, New_Package.GPR_Deps_Name), Write_GPR_Deps'Access, New_Package.Name, Package_Info_Vectors.Empty_Vector);
       Emit (Compose (Root, New_Package.GPR_Tests_Deps_Name), Write_GPR_Deps'Access, New_Package.Name & "_tests", Package_Info_Vectors.Empty_Vector);
       Emit (Compose (Root, New_Package.GPR_Tests_Name), Write_GPR_Tests'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), "tests_main.adb"), Write_Test_Runner'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.ads"), Write_Test_Suite_Spec'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.adb"), Write_Test_Suite_Body'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.ads"), Write_Test_Spec'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.adb"), Write_Test_Body'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), "tests_main.adb"), Write_Tests_Runner'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_tests.ads"), Write_Tests_Spec'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_tests.adb"), Write_Tests_Body'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "src"), New_Package.Name &  ".ads"), Write_Root_Package_Spec'Access, New_Package.Name, Cmd.Package_Type);
 
       case Cmd.Package_Type is

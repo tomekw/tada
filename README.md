@@ -22,7 +22,6 @@ sudo apt install gnat gprbuild libaunit-dev
 
 - **gnat** -- GNAT Ada compiler
 - **gprbuild** -- GPR-based build system for Ada
-- **libaunit-dev** -- AUnit testing framework (needed to build and run tests)
 
 ## Installation
 
@@ -53,7 +52,7 @@ Commands:
     init <name> [--exe|--lib]           Create a new package
     build [--profile <p>]               Compile the package
     run [--profile <p>] [-- <args>...]  Build and run the executable
-    test [--profile <p>]                Build and run the test suite
+    test [--profile <p>]                Build and run the tests
     clean                               Remove build artifacts
     cache                               Add package to the local cache
     help                                Show this message
@@ -85,6 +84,9 @@ version = "0.1.0"
 [dependencies]
 bar = "0.5.2"
 baz = "1.2.1"
+
+[dev-dependencies]
+testy = "0.1.0"
 ```
 
 ## Package naming rules
