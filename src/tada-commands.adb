@@ -265,7 +265,7 @@ package body Tada.Commands is
          Name => Name) & Get_Exe_Suffix;
    end Target_Bin_Path;
 
-   procedure Generate_Deps is
+   procedure Generate_Deps (Include_Dev_Deps : Boolean) is
       use Packages;
       use Templates;
 
@@ -288,8 +288,26 @@ package body Tada.Commands is
             end loop;
          end if;
       end Enqueue_Deps;
+
+      procedure Enqueue_Dev_Deps (Package_Manifest : Config.Manifest) is
+      begin
+         if Package_Manifest.Sections.Contains ("dev-dependencies") then
+            for C in Package_Manifest.Sections ("dev-dependencies").Iterate loop
+               declare
+                  Name : constant String := Config.String_Maps.Key (C);
+                  Version : constant String := Config.String_Maps.Element (C);
+               begin
+                  Deps_Queue.Append (Packages.Create (Name, Version));
+               end;
+            end loop;
+         end if;
+      end Enqueue_Dev_Deps;
    begin
       Enqueue_Deps (Tada_Manifest);
+
+      if Include_Dev_Deps then
+         Enqueue_Dev_Deps (Tada_Manifest);
+      end if;
 
       while not Deps_Queue.Is_Empty loop
          declare
@@ -376,12 +394,34 @@ package body Tada.Commands is
 
          Emit (Tada_Package.GPR_Deps_Name, Write_GPR_Deps'Access, Tada_Package.Name, Deps_To_Write);
       end;
+
+      if Include_Dev_Deps then
+         declare
+            Tada_Package : constant Package_Info := Packages.Create
+              (Tada_Manifest.Sections ("package") ("name"),
+               Tada_Manifest.Sections ("package") ("version"));
+
+            Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
+         begin
+            if Tada_Manifest.Sections.Contains ("dev-dependencies") then
+               for C in Tada_Manifest.Sections ("dev-dependencies").Iterate loop
+                  declare
+                     Name : constant String := Config.String_Maps.Key (C);
+                  begin
+                     Deps_To_Write.Append (Visited_Deps (Name));
+                  end;
+               end loop;
+            end if;
+
+            Emit (Tada_Package.GPR_Tests_Deps_Name, Write_GPR_Deps'Access, Tada_Package.Name & "_tests", Deps_To_Write);
+         end;
+      end if;
    end Generate_Deps;
 
    procedure Execute_Build (Cmd : Command) is
       Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
    begin
-      Generate_Deps;
+      Generate_Deps (Include_Dev_Deps => False);
 
       if not Run_GPRBuild (Package_Name, Image (Cmd.Build_Profile)) then
          raise Execute_Error with "build failed";
@@ -492,7 +532,7 @@ package body Tada.Commands is
       use Directories;
       use Templates;
 
-      New_Package : constant Packages.Package_Info := Packages.Create (Cmd.Package_Name.Element, "0.1.0");
+      New_Package : constant Packages.Package_Info := Packages.Create (Cmd.Package_Name.Element, "0.1.0-dev");
       Root : constant String := Full_Name (New_Package.Name);
    begin
       Text_IO.Put_Line ("Creating new package (" & Image (Cmd.Package_Type) & ")");
@@ -511,6 +551,7 @@ package body Tada.Commands is
       Emit (Compose (Root, New_Package.GPR_Name), Write_GPR_Main'Access, New_Package.Name, Cmd.Package_Type);
       Emit (Compose (Root, New_Package.GPR_Config_Name), Write_GPR_Config'Access, New_Package.Name);
       Emit (Compose (Root, New_Package.GPR_Deps_Name), Write_GPR_Deps'Access, New_Package.Name, Package_Info_Vectors.Empty_Vector);
+      Emit (Compose (Root, New_Package.GPR_Tests_Deps_Name), Write_GPR_Deps'Access, New_Package.Name & "_tests", Package_Info_Vectors.Empty_Vector);
       Emit (Compose (Root, New_Package.GPR_Tests_Name), Write_GPR_Tests'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "tests"), "tests_main.adb"), Write_Test_Runner'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.ads"), Write_Test_Suite_Spec'Access, New_Package.Name);
@@ -557,7 +598,7 @@ package body Tada.Commands is
       Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
       Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "tests");
    begin
-      Generate_Deps;
+      Generate_Deps (Include_Dev_Deps => True);
 
       if not Run_GPRBuild (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
          raise Execute_Error with "test build failed";

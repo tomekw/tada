@@ -71,22 +71,25 @@ package body Tada.Templates is
    begin
       Put_Line (File, "[package]");
       Put_Line (File, "name = """ & Name & """");
-      Put_Line (File, "version = ""0.1.0""");
+      Put_Line (File, "version = ""0.1.0-dev""");
       New_Line (File);
       Put_Line (File, "[dependencies]");
+      New_Line (File);
+      Put_Line (File, "[dev-dependencies]");
+      Put_Line (File, "testy = ""0.1.0""");
    end Write_Manifest;
 
    procedure Write_Gitignore (File : File_Type; Name : String) is
    begin
       Put_Line (File, "target/");
       Put_Line (File, Name & "_deps.gpr");
+      Put_Line (File, Name & "_tests_deps.gpr");
    end Write_Gitignore;
 
    procedure Write_GPR_Config (File : File_Type; Name : String) is
       MC : constant String := Mixed_Case (Name);
    begin
       Put_Line (File, "abstract project " & MC & "_Config is");
-      Put_Line (File, "");
       Put_Line (File, "   type Build_Profile_Kind is (""debug"", ""release"");");
       Put_Line (File, "   Build_Profile : Build_Profile_Kind :=");
       Put_Line (File, "     external (""BUILD_PROFILE"", ""debug"");");
@@ -117,7 +120,6 @@ package body Tada.Templates is
       Put_Line (File, "      when ""debug""   => Linker_Switches := ();");
       Put_Line (File, "      when ""release"" => Linker_Switches := ();");
       Put_Line (File, "   end case;");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & "_Config;");
    end Write_GPR_Config;
 
@@ -139,7 +141,6 @@ package body Tada.Templates is
       Put_Line (File, "with """ & Name & "_deps.gpr"";");
       Put_Line (File, "");
       Put_Line (File, "project " & MC & " is");
-      Put_Line (File, "");
       Put_Line (File, "   for Source_Dirs use (""src"");");
       Put_Line (File, "   for Object_Dir use ""target/"" & " & MC & "_Config.Build_Profile & ""/obj"";");
 
@@ -179,7 +180,6 @@ package body Tada.Templates is
             Put_Line (File, "   end Compiler;");
       end case;
 
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & ";");
    end Write_GPR_Main;
 
@@ -187,11 +187,11 @@ package body Tada.Templates is
       MC : constant String := Mixed_Case (Name);
    begin
       Put_Line (File, "with """ & Name & "_config.gpr"";");
+      Put_Line (File, "with """ & Name & "_tests_deps.gpr"";");
       Put_Line (File, "with """ & Name & ".gpr"";");
       Put_Line (File, "with ""aunit.gpr"";");
       Put_Line (File, "");
       Put_Line (File, "project " & MC & "_Tests is");
-      Put_Line (File, "");
       Put_Line (File, "   for Source_Dirs use (""tests"");");
       Put_Line (File, "   for Object_Dir use ""target/"" & " & MC & "_Config.Build_Profile & ""/obj-tests"";");
       Put_Line (File, "   for Exec_Dir use ""target/"" & " & MC & "_Config.Build_Profile & ""/bin"";");
@@ -210,7 +210,6 @@ package body Tada.Templates is
       Put_Line (File, "   package Binder is");
       Put_Line (File, "      for Default_Switches " & "(""Ada"") use (""-Es"");");
       Put_Line (File, "   end Binder;");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & "_Tests;");
    end Write_GPR_Tests;
 
@@ -237,9 +236,7 @@ package body Tada.Templates is
       Put_Line (File, "with AUnit.Test_Suites;");
       Put_Line (File, "");
       Put_Line (File, "package " & MC & "_Suite is");
-      Put_Line (File, "");
       Put_Line (File, "   function Suite return AUnit.Test_Suites.Access_Test_Suite;");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & "_Suite;");
    end Write_Test_Suite_Spec;
 
@@ -249,7 +246,6 @@ package body Tada.Templates is
       Put_Line (File, "with " & MC & "_Test;");
       Put_Line (File, "");
       Put_Line (File, "package body " & MC & "_Suite is");
-      Put_Line (File, "");
       Put_Line (File, "   Result : aliased AUnit.Test_Suites.Test_Suite;");
       Put_Line (File, "   Test_1 : aliased " & MC & "_Test.Test_Case;");
       Put_Line (File, "");
@@ -259,7 +255,6 @@ package body Tada.Templates is
       Put_Line (File, "        (Result'Access, Test_1'Access);");
       Put_Line (File, "      return Result'Access;");
       Put_Line (File, "   end Suite;");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & "_Suite;");
    end Write_Test_Suite_Body;
 
@@ -269,7 +264,6 @@ package body Tada.Templates is
       Put_Line (File, "with AUnit.Test_Cases;");
       Put_Line (File, "");
       Put_Line (File, "package " & MC & "_Test is");
-      Put_Line (File, "");
       Put_Line (File, "   type Test_Case is new " & "AUnit.Test_Cases.Test_Case");
       Put_Line (File, "     with null record;");
       Put_Line (File, "");
@@ -285,7 +279,6 @@ package body Tada.Templates is
       Put_Line (File, "");
       Put_Line (File, "   procedure Test_True");
       Put_Line (File, "     (Unused_T : in out AUnit.Test_Cases.Test_Case'Class);");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & "_Test;");
    end Write_Test_Spec;
 
@@ -296,7 +289,6 @@ package body Tada.Templates is
       Put_Line (File, "with AUnit.Test_Cases; use AUnit.Test_Cases;");
       Put_Line (File, "");
       Put_Line (File, "package body " & MC & "_Test is");
-      Put_Line (File, "");
       Put_Line (File, "   overriding");
       Put_Line (File, "   function Name");
       Put_Line (File, "     (Unused_T : Test_Case)");
@@ -320,7 +312,6 @@ package body Tada.Templates is
       Put_Line (File, "   begin");
       Put_Line (File, "      Assert (True, ""True is True"");");
       Put_Line (File, "   end Test_True;");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & "_Test;");
    end Write_Test_Body;
 
@@ -335,9 +326,7 @@ package body Tada.Templates is
 
          when Lib =>
             Put_Line (File, "package " & MC & " is");
-            Put_Line (File, "");
             Put_Line (File, "   procedure Hello;");
-            Put_Line (File, "");
             Put_Line (File, "end " & MC & ";");
       end case;
    end Write_Root_Package_Spec;
@@ -365,12 +354,10 @@ package body Tada.Templates is
       Put_Line (File, "with Ada.Text_IO;");
       Put_Line (File, "");
       Put_Line (File, "package body " & MC & " is");
-      Put_Line (File, "");
       Put_Line (File, "   procedure Hello is");
       Put_Line (File, "   begin");
       Put_Line (File, "      Ada.Text_IO.Put_Line (""Hello from " & MC & "!"");");
       Put_Line (File, "   end Hello;");
-      Put_Line (File, "");
       Put_Line (File, "end " & MC & ";");
    end Write_Root_Package_Body;
 end Tada.Templates;
