@@ -9,6 +9,7 @@ with GNAT.Strings;
 
 with Tada.Config;
 with Tada.Package_Cache;
+with Tada.Package_Indexes;
 with Tada.Packages;
 with Tada.Packages.Containers;
 with Tada.Templates;
@@ -571,8 +572,12 @@ package body Tada.Commands is
    end Cache_Package;
 
    procedure Execute_Install is
+      Index : constant Package_Indexes.Package_Index := Package_Indexes.Read (Package_Index_Url);
    begin
-      null;
+      Text_IO.Put_Line (Index.Packages.Element (1).Name.Element);
+      Text_IO.Put_Line (Index.Packages.Element (1).Version.Element);
+      Text_IO.Put_Line (Index.Packages.Element (1).Url.Element);
+      Text_IO.Put_Line (Index.Packages.Element (1).Checksum.Element);
    end Execute_Install;
 
    procedure Execute_Run (Cmd : Command) is

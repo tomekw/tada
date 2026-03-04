@@ -3,7 +3,7 @@ with Ada.Containers.Indefinite_Holders;
 package Tada is
    Version : constant String := "0.4.0";
 
-   Packages_Index_Url : constant String :=
+   Package_Index_Url : constant String :=
      "https://raw.githubusercontent.com/tadapm/tada-packages/refs/heads/main/index";
 
    type Package_Kind is (Exe,
