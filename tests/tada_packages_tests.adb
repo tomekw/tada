@@ -1,6 +1,3 @@
-with AUnit.Assertions; use AUnit.Assertions;
-with AUnit.Test_Cases; use AUnit.Test_Cases;
-
 with Ada.Containers.Indefinite_Hashed_Maps;
 with Ada.Strings.Hash;
 
@@ -10,25 +7,13 @@ package body Tada_Packages_Tests is
    use Ada;
    use Tada;
 
-   overriding
-   function Name (Unused_T : Test_Case) return Message_String is
-   begin
-      return Format ("Tada.Packages");
-   end Name;
-
-   overriding
-   procedure Register_Tests (T : in out Test_Case) is
-   begin
-      Registration.Register_Routine (T, Test_Validate_Package_Names'Access, "Package name is validated");
-   end Register_Tests;
-
    package Package_Names_To_Valid is new Containers.Indefinite_Hashed_Maps
      (Key_Type => String,
       Element_Type => Boolean,
       Hash => Strings.Hash,
       Equivalent_Keys => "=");
 
-   procedure Test_Validate_Package_Names (Unused_T : in out Test_Cases.Test_Case'Class) is
+   procedure Test_Validate_Package_Names (T : in out Test_Context) is
       Names : constant Package_Names_To_Valid.Map :=
         ["hello" => True,
          "Hello" => False,
@@ -53,8 +38,8 @@ package body Tada_Packages_Tests is
             Package_Name : constant String := Package_Names_To_Valid.Key (C);
             Validity : constant Boolean := Package_Names_To_Valid.Element (C);
          begin
-            Assert (Packages.Is_Valid_Name (Package_Name) = Validity,
-                    "Expected: '" & Package_Name & "' to be: " & Validity'Image);
+            T.Expect (Packages.Is_Valid_Name (Package_Name) = Validity,
+                      "Expected: '" & Package_Name & "' to be: " & Validity'Image);
          end;
       end loop;
    end Test_Validate_Package_Names;
