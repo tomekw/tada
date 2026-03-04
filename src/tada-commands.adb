@@ -149,8 +149,6 @@ package body Tada.Commands is
             when Build =>
                return (Kind => Build,
                        Build_Profile => Parse_Profile (Arguments));
-            when Cache =>
-               return (Kind => Cache);
             when Clean =>
                return (Kind => Clean);
             when Help =>
@@ -159,6 +157,8 @@ package body Tada.Commands is
                return (Kind => Init,
                        Package_Name => String_Holders.To_Holder (Parse_Package_Name (Arguments)),
                        Package_Type => Parse_Package_Type (Arguments));
+            when Install =>
+               return (Kind => Install);
             when Run =>
                return (Kind => Run,
                        Run_Profile => Parse_Profile (Arguments),
@@ -428,83 +428,6 @@ package body Tada.Commands is
       end if;
    end Execute_Build;
 
-   procedure Copy_Tree (Source_Path : String; Target_Path : String) is
-      use Directories;
-
-      Tree_Search : Search_Type;
-      Search_Item : Directory_Entry_Type;
-      Search_Filter : constant Filter_Type := [Ordinary_File => True,
-                                               Directory => True,
-                                               Special_File => False];
-   begin
-      Create_Directory (Target_Path);
-      Start_Search (Tree_Search, Source_Path, "", Search_Filter);
-
-      while More_Entries (Tree_Search) loop
-         Get_Next_Entry (Tree_Search, Search_Item);
-
-         declare
-            Entry_Name : constant String := Simple_Name (Search_Item);
-         begin
-            if Kind (Search_Item) = Ordinary_File then
-               Copy_File (Full_Name (Search_Item), Compose (Target_Path, Entry_Name));
-            elsif Kind (Search_Item) = Directory and then
-                  Entry_Name /= "." and then
-                  Entry_Name /= ".."
-            then
-               Copy_Tree (Compose (Source_Path, Entry_Name), Compose (Target_Path, Entry_Name));
-            end if;
-         end;
-      end loop;
-      Text_IO.Put_Line ("Copied '" & Source_Path & "' to '" & Target_Path & "'");
-
-      End_Search (Tree_Search);
-   end Copy_Tree;
-
-   procedure Execute_Cache is
-      use Directories;
-
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
-      Tada_Package : constant Packages.Package_Info :=
-        Packages.Create (Tada_Manifest.Sections ("package") ("name"),
-                         Tada_Manifest.Sections ("package") ("version"));
-      Tada_Package_Cache_Path : constant String := Package_Cache.Package_Path (Tada_Package);
-   begin
-      if Package_Cache.Is_Cached (Tada_Package) then
-         raise Execute_Error with "package '" & Tada_Package.Name & " " & Tada_Package.Version &
-                                  "' already cached at '" & Tada_Package_Cache_Path & "'";
-      end if;
-
-      begin
-         begin
-            Create_Path (Tada_Package_Cache_Path);
-         exception
-            when Use_Error =>
-               raise Execute_Error with "unable to create '" & Tada_Package_Cache_Path & "'";
-         end;
-
-         Copy_File (Packages.Manifest_Name, Package_Cache.Manifest_Path (Tada_Package));
-         Text_IO.Put_Line ("Copied '" & Packages.Manifest_Name & "' to '" & Tada_Package_Cache_Path & "'");
-
-         Copy_File (Tada_Package.GPR_Name, Package_Cache.GPR_Path (Tada_Package));
-         Text_IO.Put_Line ("Copied '" & Tada_Package.GPR_Name & "' to '" & Tada_Package_Cache_Path & "'");
-
-         Copy_File (Tada_Package.GPR_Config_Name, Package_Cache.GPR_Config_Path (Tada_Package));
-         Text_IO.Put_Line ("Copied '" & Tada_Package.GPR_Config_Name & "' to '" & Tada_Package_Cache_Path & "'");
-
-         Copy_Tree ("src", Compose (Tada_Package_Cache_Path, "src"));
-
-         Text_IO.New_Line;
-         Text_IO.Put_Line ("Cached package '" & Tada_Package.Name & " " & Tada_Package.Version &
-                           "' at '" & Tada_Package_Cache_Path & "'");
-      exception
-         when E : others =>
-            Delete_Tree (Tada_Package_Cache_Path);
-
-            raise Execute_Error with Exceptions.Exception_Message (E);
-      end;
-   end Execute_Cache;
-
    procedure Execute_Clean is
    begin
       if Directories.Exists ("target") then
@@ -522,8 +445,8 @@ package body Tada.Commands is
       Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
       Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
       Text_IO.Put_Line ("    test [--profile <p>]                Build and run the tests");
+      Text_IO.Put_Line ("    install                             Install dependencies");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
-      Text_IO.Put_Line ("    cache                               Add package to the local cache");
       Text_IO.Put_Line ("    help                                Show this message");
       Text_IO.Put_Line ("    version                             Display version");
    end Execute_Help;
@@ -572,6 +495,86 @@ package body Tada.Commands is
          raise Execute_Error with Exceptions.Exception_Message (E);
    end Execute_Init;
 
+   procedure Copy_Tree (Source_Path : String; Target_Path : String) is
+      use Directories;
+
+      Tree_Search : Search_Type;
+      Search_Item : Directory_Entry_Type;
+      Search_Filter : constant Filter_Type := [Ordinary_File => True,
+                                               Directory => True,
+                                               Special_File => False];
+   begin
+      Create_Directory (Target_Path);
+      Start_Search (Tree_Search, Source_Path, "", Search_Filter);
+
+      while More_Entries (Tree_Search) loop
+         Get_Next_Entry (Tree_Search, Search_Item);
+
+         declare
+            Entry_Name : constant String := Simple_Name (Search_Item);
+         begin
+            if Kind (Search_Item) = Ordinary_File then
+               Copy_File (Full_Name (Search_Item), Compose (Target_Path, Entry_Name));
+            elsif Kind (Search_Item) = Directory and then
+                  Entry_Name /= "." and then
+                  Entry_Name /= ".."
+            then
+               Copy_Tree (Compose (Source_Path, Entry_Name), Compose (Target_Path, Entry_Name));
+            end if;
+         end;
+      end loop;
+      Text_IO.Put_Line ("Copied '" & Source_Path & "' to '" & Target_Path & "'");
+
+      End_Search (Tree_Search);
+   end Copy_Tree;
+
+   procedure Cache_Package (Package_Tmp_Path : String) is
+      use Directories;
+
+      Tada_Manifest : constant Config.Manifest := Config.Read (Compose (Package_Tmp_Path, Packages.Manifest_Name));
+      Tada_Package : constant Packages.Package_Info :=
+        Packages.Create (Tada_Manifest.Sections ("package") ("name"),
+                         Tada_Manifest.Sections ("package") ("version"));
+      Tada_Package_Cache_Path : constant String := Package_Cache.Package_Path (Tada_Package);
+   begin
+      if Package_Cache.Is_Cached (Tada_Package) then
+         Text_IO.Put_Line ("Package '" & Tada_Package.Name & " " & Tada_Package.Version &
+                           "' already installed at '" & Tada_Package_Cache_Path & "'. Skipping.");
+         return;
+      end if;
+
+      begin
+         begin
+            Create_Path (Tada_Package_Cache_Path);
+         exception
+            when Use_Error =>
+               raise Execute_Error with "unable to create '" & Tada_Package_Cache_Path & "'";
+         end;
+
+         Copy_File (Compose (Package_Tmp_Path, Packages.Manifest_Name), Package_Cache.Manifest_Path (Tada_Package));
+
+         Copy_File (Compose (Package_Tmp_Path, Tada_Package.GPR_Name), Package_Cache.GPR_Path (Tada_Package));
+
+         Copy_File (Compose (Package_Tmp_Path, Tada_Package.GPR_Config_Name), Package_Cache.GPR_Config_Path (Tada_Package));
+
+         Copy_Tree (Compose (Package_Tmp_Path, "src"), Compose (Tada_Package_Cache_Path, "src"));
+
+         Text_IO.New_Line;
+         Text_IO.Put_Line ("Installed package '" & Tada_Package.Name & " " & Tada_Package.Version &
+                           "' at '" & Tada_Package_Cache_Path & "'");
+      exception
+         when E : others =>
+            Delete_Tree (Tada_Package_Cache_Path);
+
+            raise Execute_Error with Exceptions.Exception_Message (E);
+      end;
+   end Cache_Package;
+
+   procedure Execute_Install is
+   begin
+      null;
+   end Execute_Install;
+
    procedure Execute_Run (Cmd : Command) is
       Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
       Build_Cmd : constant Command := (Kind => Build, Build_Profile => Cmd.Run_Profile);
@@ -613,15 +616,19 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Help | Init | Version =>
             null;
-         when Build | Cache | Clean | Run | Test =>
+         when Build | Clean | Install | Run | Test =>
             if not In_Package_Root then
                raise Execute_Error with "could not find '" & Packages.Manifest_Name & "' in current directory";
             end if;
       end case;
 
       case Cmd.Kind is
-         when Cache | Clean | Help | Init | Version =>
+         when Clean | Help | Init | Version =>
             null;
+         when Install =>
+            if not Exec_On_Path ("curl") then
+               raise Execute_Error with "could not find executable 'curl' in PATH";
+            end if;
          when Build | Run | Test =>
             if not Exec_On_Path ("gprbuild") then
                raise Execute_Error with "could not find executable 'gprbuild' in PATH";
@@ -630,10 +637,10 @@ package body Tada.Commands is
 
       case Cmd.Kind is
          when Build => Execute_Build (Cmd);
-         when Cache => Execute_Cache;
          when Clean => Execute_Clean;
          when Help => Execute_Help;
          when Init => Execute_Init (Cmd);
+         when Install => Execute_Install;
          when Run => Execute_Run (Cmd);
          when Test => Execute_Test (Cmd);
          when Version => Execute_Version;

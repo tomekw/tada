@@ -200,9 +200,9 @@ package body Tada_Commands_Tests is
       T.Expect_Raises (Parse_Init_Name_Package'Access, Parse_Error'Identity, "invalid package name 'package'");
    end Test_Parse_Init_Name_Package;
 
-   procedure Test_Parse_Cache (T : in out Test_Context) is
-      Args : constant Argument_List.Vector := ["cache"];
+   procedure Test_Parse_Install (T : in out Test_Context) is
+      Args : constant Argument_List.Vector := ["install"];
    begin
-      T.Expect (Commands.Parse (Args) = (Kind => Cache), "Expected command: Cache");
-   end Test_Parse_Cache;
+      T.Expect (Commands.Parse (Args) = (Kind => Install), "Expected command: Install");
+   end Test_Parse_Install;
 end Tada_Commands_Tests;

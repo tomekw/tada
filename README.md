@@ -53,8 +53,8 @@ Commands:
     build [--profile <p>]               Compile the package
     run [--profile <p>] [-- <args>...]  Build and run the executable
     test [--profile <p>]                Build and run the tests
+    install                             Install dependencies
     clean                               Remove build artifacts
-    cache                               Add package to the local cache
     help                                Show this message
     version                             Display version
 ```
@@ -62,6 +62,7 @@ Commands:
 The workflow, for now, is still somewhat manual:
 
 1. Create a new package with `tada init`, either a binary with `--exe` or a library with `--lib`.
+1. Run `tada install` to install dependencies.
 1. Build with `tada build`. Profile is either `--debug` or `--release`. `--debug` is the default.
 1. Run with `tada run`. `--` separates arguments passed to the target binary.
 1. Test with `tada test`.
@@ -69,9 +70,8 @@ The workflow, for now, is still somewhat manual:
 
 To add a new dependency:
 
-1. Clone or copy the dependency's source (must be a Tada project with `tada.toml`) to a local directory.
-1. Run `tada cache` inside that directory. This copies the package into `~/.cache/tada/package/NAME/VERSION/` on Linux/Unix, `%LOCALAPPDATA%\tada\package\NAME\VERSION\` on Windows.
-1. Add the dependency to your `tada.toml`, e.g. `bar = "0.5.2"` under `[dependencies]`.
+1. Add the dependency to your `tada.toml`, e.g. `bar = "0.5.2"` under `[dependencies]` or `[dev-dependencies]`.
+1. Run `tada install`.
 1. Use `with` to import the dependency's units in your Ada code. Build, test, and run as usual.
 
 ## Manifest file
@@ -120,10 +120,6 @@ For now, there are only two that I know of:
   Ada testing framework
   
 If there's something you have built with Tada, and would like to have it included here, let me know!
-
-## Roadmap
-
-- [ ] dependencies index
 
 ## Disclaimer
 

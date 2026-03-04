@@ -45,5 +45,5 @@ package Tada_Commands_Tests is
 
    procedure Test_Parse_Init_Name_Package (T : in out Test_Context);
 
-   procedure Test_Parse_Cache (T : in out Test_Context);
+   procedure Test_Parse_Install (T : in out Test_Context);
 end Tada_Commands_Tests;
