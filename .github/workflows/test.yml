@@ -17,7 +17,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            gnat gprbuild libaunit-dev curl ca-certificates git
+            gnat gprbuild curl ca-certificates git
 
       - name: Checkout
         uses: actions/checkout@v4

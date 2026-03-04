@@ -17,7 +17,7 @@ Tested on Linux x86_64, MacOS ARM and Windows x86_64.
 ### Debian / Ubuntu
 
 ```bash
-sudo apt install gnat gprbuild libaunit-dev
+sudo apt install gnat gprbuild
 ```
 
 - **gnat** -- GNAT Ada compiler
@@ -101,27 +101,29 @@ testy = "0.1.0"
 
 ## Testing
 
-Tada's own test suite uses AUnit:
+Tada's own test suite uses [Testy](https://github.com/tomekw/testy):
 
 ```bash
 tada test
 ```
 
-## Dependencies
+## Packages
 
-For now, there is only one that I know of:
+For now, there are only two that I know of:
 
 * tackle (https://github.com/tomekw/tackle)
 
   Or TACkLe. Or Tomek's Ada Class Library. Everything I find useful and I think should be a part of the (extended) standard library.
+
+* testy (https://github.com/tomekw/testy)
+
+  Ada testing framework
   
 If there's something you have built with Tada, and would like to have it included here, let me know!
 
 ## Roadmap
 
-- [x] local (cached) dependencies
-- [ ] git dependencies
-- [ ] dependencies index (?)
+- [ ] dependencies index
 
 ## Disclaimer
 
