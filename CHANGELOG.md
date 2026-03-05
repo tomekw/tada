@@ -1,5 +1,7 @@
 ## unreleased
 
+## 0.5.0
+
 * add `tada install` command: install packages from index
 * breaking: remove `tada cache` command
 * breaking: test runner executable renamed to `tests`
