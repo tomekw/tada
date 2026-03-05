@@ -29,5 +29,8 @@ jobs:
             -o /usr/local/bin/tada
           chmod +x /usr/local/bin/tada
 
+      - name: Install dependencies
+        run: tada install
+
       - name: Run tests
         run: tada test --profile release
