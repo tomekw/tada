@@ -17,12 +17,8 @@ Tested on Linux x86_64, MacOS ARM and Windows x86_64.
 ### Debian / Ubuntu
 
 ```bash
-sudo apt install gnat gprbuild libaunit-dev
+sudo apt install curl gnat gprbuild
 ```
-
-- **gnat** -- GNAT Ada compiler
-- **gprbuild** -- GPR-based build system for Ada
-- **libaunit-dev** -- AUnit testing framework (needed to build and run tests)
 
 ## Installation
 
@@ -53,9 +49,9 @@ Commands:
     init <name> [--exe|--lib]           Create a new package
     build [--profile <p>]               Compile the package
     run [--profile <p>] [-- <args>...]  Build and run the executable
-    test [--profile <p>]                Build and run the test suite
+    test [--profile <p>]                Build and run the tests
+    install                             Install dependencies
     clean                               Remove build artifacts
-    cache                               Add package to the local cache
     help                                Show this message
     version                             Display version
 ```
@@ -63,6 +59,7 @@ Commands:
 The workflow, for now, is still somewhat manual:
 
 1. Create a new package with `tada init`, either a binary with `--exe` or a library with `--lib`.
+1. Run `tada install` to install dependencies.
 1. Build with `tada build`. Profile is either `--debug` or `--release`. `--debug` is the default.
 1. Run with `tada run`. `--` separates arguments passed to the target binary.
 1. Test with `tada test`.
@@ -70,9 +67,8 @@ The workflow, for now, is still somewhat manual:
 
 To add a new dependency:
 
-1. Clone or copy the dependency's source (must be a Tada project with `tada.toml`) to a local directory.
-1. Run `tada cache` inside that directory. This copies the package into `~/.cache/tada/package/NAME/VERSION/` on Linux/Unix, `%LOCALAPPDATA%\tada\package\NAME\VERSION\` on Windows.
-1. Add the dependency to your `tada.toml`, e.g. `bar = "0.5.2"` under `[dependencies]`.
+1. Add the dependency to your `tada.toml`, e.g. `bar = "0.5.2"` under `[dependencies]` or `[dev-dependencies]`.
+1. Run `tada install`.
 1. Use `with` to import the dependency's units in your Ada code. Build, test, and run as usual.
 
 ## Manifest file
@@ -85,6 +81,9 @@ version = "0.1.0"
 [dependencies]
 bar = "0.5.2"
 baz = "1.2.1"
+
+[dev-dependencies]
+testy = "0.1.0"
 ```
 
 ## Package naming rules
@@ -99,27 +98,25 @@ baz = "1.2.1"
 
 ## Testing
 
-Tada's own test suite uses AUnit:
+Tada's own test suite uses [Testy](https://github.com/tomekw/testy):
 
 ```bash
 tada test
 ```
 
-## Dependencies
+## Packages
 
-For now, there is only one that I know of:
+For now, there are only two that I know of:
 
 * tackle (https://github.com/tomekw/tackle)
 
   Or TACkLe. Or Tomek's Ada Class Library. Everything I find useful and I think should be a part of the (extended) standard library.
+
+* testy (https://github.com/tomekw/testy)
+
+  Ada testing framework
   
 If there's something you have built with Tada, and would like to have it included here, let me know!
-
-## Roadmap
-
-- [x] local (cached) dependencies
-- [ ] git dependencies
-- [ ] dependencies index (?)
 
 ## Disclaimer
 

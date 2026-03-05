@@ -9,8 +9,10 @@ with GNAT.Strings;
 
 with Tada.Config;
 with Tada.Package_Cache;
+with Tada.Package_Indexes;
 with Tada.Packages;
 with Tada.Packages.Containers;
+with Tada.Runners;
 with Tada.Templates;
 
 package body Tada.Commands is
@@ -149,8 +151,6 @@ package body Tada.Commands is
             when Build =>
                return (Kind => Build,
                        Build_Profile => Parse_Profile (Arguments));
-            when Cache =>
-               return (Kind => Cache);
             when Clean =>
                return (Kind => Clean);
             when Help =>
@@ -159,6 +159,8 @@ package body Tada.Commands is
                return (Kind => Init,
                        Package_Name => String_Holders.To_Holder (Parse_Package_Name (Arguments)),
                        Package_Type => Parse_Package_Type (Arguments));
+            when Install =>
+               return (Kind => Install);
             when Run =>
                return (Kind => Run,
                        Run_Profile => Parse_Profile (Arguments),
@@ -187,37 +189,6 @@ package body Tada.Commands is
 
       return Result;
    end Exec_On_Path;
-
-   function Run_GPRBuild (Project : String; Profile : String) return Boolean is
-      use type OS.String_Access;
-
-      GPRBuild_Path : OS.String_Access := OS.Locate_Exec_On_Path ("gprbuild");
-      Args : OS.Argument_List (1 .. 4) :=
-        [new String'("-P"),
-          new String'(Project & ".gpr"),
-          new String'("-XBUILD_PROFILE=" & Profile),
-          new String'("-p")];
-      Result : Boolean := False;
-   begin
-      if GPRBuild_Path /= null then
-         OS.Spawn (GPRBuild_Path.all, Args, Result);
-      end if;
-
-      OS.Free (GPRBuild_Path);
-      for Arg of Args loop
-         OS.Free (Arg);
-      end loop;
-
-      return Result;
-   exception
-      when others =>
-         OS.Free (GPRBuild_Path);
-         for Arg of Args loop
-            OS.Free (Arg);
-         end loop;
-
-         return False;
-   end Run_GPRBuild;
 
    function Run_Target (Name : String; Arguments : CL_Arguments.Argument_List.Vector)
      return Boolean
@@ -265,31 +236,36 @@ package body Tada.Commands is
          Name => Name) & Get_Exe_Suffix;
    end Target_Bin_Path;
 
-   procedure Generate_Deps is
+   procedure Enqueue_Deps (Deps_Queue : in out Package_Info_Queues.List;
+                           Package_Manifest : Config.Manifest;
+                           Section_Name : String)
+   is
+   begin
+      if Package_Manifest.Sections.Contains (Section_Name) then
+         for C in Package_Manifest.Sections (Section_Name).Iterate loop
+            declare
+               Name : constant String := Config.String_Maps.Key (C);
+               Version : constant String := Config.String_Maps.Element (C);
+            begin
+               Deps_Queue.Append (Packages.Create (Name, Version));
+            end;
+         end loop;
+      end if;
+   end Enqueue_Deps;
+
+   procedure Generate_Deps (Tada_Manifest : Config.Manifest; Include_Dev_Deps : Boolean) is
       use Packages;
       use Templates;
-
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
 
       Deps_Queue : Package_Info_Queues.List := Package_Info_Queues.Empty_List;
       Missing_Deps : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
       Visited_Deps : Package_Info_Maps.Map := Package_Info_Maps.Empty_Map;
-
-      procedure Enqueue_Deps (Package_Manifest : Config.Manifest) is
-      begin
-         if Package_Manifest.Sections.Contains ("dependencies") then
-            for C in Package_Manifest.Sections ("dependencies").Iterate loop
-               declare
-                  Name : constant String := Config.String_Maps.Key (C);
-                  Version : constant String := Config.String_Maps.Element (C);
-               begin
-                  Deps_Queue.Append (Packages.Create (Name, Version));
-               end;
-            end loop;
-         end if;
-      end Enqueue_Deps;
    begin
-      Enqueue_Deps (Tada_Manifest);
+      Enqueue_Deps (Deps_Queue, Tada_Manifest, "dependencies");
+
+      if Include_Dev_Deps then
+         Enqueue_Deps (Deps_Queue, Tada_Manifest, "dev-dependencies");
+      end if;
 
       while not Deps_Queue.Is_Empty loop
          declare
@@ -311,7 +287,7 @@ package body Tada.Commands is
                   declare
                      Dep_Manifest : constant Config.Manifest := Config.Read (Package_Cache.Manifest_Path (Dep));
                   begin
-                     Enqueue_Deps (Dep_Manifest);
+                     Enqueue_Deps (Deps_Queue, Dep_Manifest, "dependencies");
                   end;
                end if;
             end if;
@@ -331,7 +307,7 @@ package body Tada.Commands is
                   Append (Error_Message_Builder, "    - " & Dep.Name & " " & Dep.Version & Characters.Latin_1.LF);
                end;
             end loop;
-            Append (Error_Message_Builder, "cache each package manually with 'tada cache'");
+            Append (Error_Message_Builder, "install missing packages with 'tada install'");
 
             raise Execute_Error with To_String (Error_Message_Builder);
          end;
@@ -361,109 +337,53 @@ package body Tada.Commands is
          Tada_Package : constant Package_Info := Packages.Create
            (Tada_Manifest.Sections ("package") ("name"),
             Tada_Manifest.Sections ("package") ("version"));
-
-         Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
       begin
-         if Tada_Manifest.Sections.Contains ("dependencies") then
-            for C in Tada_Manifest.Sections ("dependencies").Iterate loop
-               declare
-                  Name : constant String := Config.String_Maps.Key (C);
-               begin
-                  Deps_To_Write.Append (Visited_Deps (Name));
-               end;
-            end loop;
-         end if;
+         declare
+            Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
+         begin
+            if Tada_Manifest.Sections.Contains ("dependencies") then
+               for C in Tada_Manifest.Sections ("dependencies").Iterate loop
+                  declare
+                     Name : constant String := Config.String_Maps.Key (C);
+                  begin
+                     Deps_To_Write.Append (Visited_Deps (Name));
+                  end;
+               end loop;
+            end if;
 
-         Emit (Tada_Package.GPR_Deps_Name, Write_GPR_Deps'Access, Tada_Package.Name, Deps_To_Write);
+            Emit (Tada_Package.GPR_Deps_Name, Write_GPR_Deps'Access, Tada_Package.Name, Deps_To_Write);
+         end;
+
+         if Include_Dev_Deps then
+            declare
+               Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
+            begin
+               if Tada_Manifest.Sections.Contains ("dev-dependencies") then
+                  for C in Tada_Manifest.Sections ("dev-dependencies").Iterate loop
+                     declare
+                        Name : constant String := Config.String_Maps.Key (C);
+                     begin
+                        Deps_To_Write.Append (Visited_Deps (Name));
+                     end;
+                  end loop;
+               end if;
+
+               Emit (Tada_Package.GPR_Tests_Deps_Name, Write_GPR_Deps'Access, Tada_Package.Name & "_tests", Deps_To_Write);
+            end;
+         end if;
       end;
    end Generate_Deps;
 
    procedure Execute_Build (Cmd : Command) is
-      Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
+      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
    begin
-      Generate_Deps;
+      Generate_Deps (Tada_Manifest, Include_Dev_Deps => False);
 
-      if not Run_GPRBuild (Package_Name, Image (Cmd.Build_Profile)) then
+      if not Runners.Run_GPRBuild (Package_Name, Image (Cmd.Build_Profile)) then
          raise Execute_Error with "build failed";
       end if;
    end Execute_Build;
-
-   procedure Copy_Tree (Source_Path : String; Target_Path : String) is
-      use Directories;
-
-      Tree_Search : Search_Type;
-      Search_Item : Directory_Entry_Type;
-      Search_Filter : constant Filter_Type := [Ordinary_File => True,
-                                               Directory => True,
-                                               Special_File => False];
-   begin
-      Create_Directory (Target_Path);
-      Start_Search (Tree_Search, Source_Path, "", Search_Filter);
-
-      while More_Entries (Tree_Search) loop
-         Get_Next_Entry (Tree_Search, Search_Item);
-
-         declare
-            Entry_Name : constant String := Simple_Name (Search_Item);
-         begin
-            if Kind (Search_Item) = Ordinary_File then
-               Copy_File (Full_Name (Search_Item), Compose (Target_Path, Entry_Name));
-            elsif Kind (Search_Item) = Directory and then
-                  Entry_Name /= "." and then
-                  Entry_Name /= ".."
-            then
-               Copy_Tree (Compose (Source_Path, Entry_Name), Compose (Target_Path, Entry_Name));
-            end if;
-         end;
-      end loop;
-      Text_IO.Put_Line ("Copied '" & Source_Path & "' to '" & Target_Path & "'");
-
-      End_Search (Tree_Search);
-   end Copy_Tree;
-
-   procedure Execute_Cache is
-      use Directories;
-
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
-      Tada_Package : constant Packages.Package_Info :=
-        Packages.Create (Tada_Manifest.Sections ("package") ("name"),
-                         Tada_Manifest.Sections ("package") ("version"));
-      Tada_Package_Cache_Path : constant String := Package_Cache.Package_Path (Tada_Package);
-   begin
-      if Package_Cache.Is_Cached (Tada_Package) then
-         raise Execute_Error with "package '" & Tada_Package.Name & " " & Tada_Package.Version &
-                                  "' already cached at '" & Tada_Package_Cache_Path & "'";
-      end if;
-
-      begin
-         begin
-            Create_Path (Tada_Package_Cache_Path);
-         exception
-            when Use_Error =>
-               raise Execute_Error with "unable to create '" & Tada_Package_Cache_Path & "'";
-         end;
-
-         Copy_File (Packages.Manifest_Name, Package_Cache.Manifest_Path (Tada_Package));
-         Text_IO.Put_Line ("Copied '" & Packages.Manifest_Name & "' to '" & Tada_Package_Cache_Path & "'");
-
-         Copy_File (Tada_Package.GPR_Name, Package_Cache.GPR_Path (Tada_Package));
-         Text_IO.Put_Line ("Copied '" & Tada_Package.GPR_Name & "' to '" & Tada_Package_Cache_Path & "'");
-
-         Copy_File (Tada_Package.GPR_Config_Name, Package_Cache.GPR_Config_Path (Tada_Package));
-         Text_IO.Put_Line ("Copied '" & Tada_Package.GPR_Config_Name & "' to '" & Tada_Package_Cache_Path & "'");
-
-         Copy_Tree ("src", Compose (Tada_Package_Cache_Path, "src"));
-
-         Text_IO.New_Line;
-         Text_IO.Put_Line ("Cached package '" & Tada_Package.Name & " " & Tada_Package.Version &
-                           "' at '" & Tada_Package_Cache_Path & "'");
-      exception
-         when E : others =>
-            Delete_Tree (Tada_Package_Cache_Path);
-
-            raise Execute_Error with Exceptions.Exception_Message (E);
-      end;
-   end Execute_Cache;
 
    procedure Execute_Clean is
    begin
@@ -481,9 +401,9 @@ package body Tada.Commands is
       Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
       Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
       Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
-      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the test suite");
+      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the tests");
+      Text_IO.Put_Line ("    install                             Install dependencies");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
-      Text_IO.Put_Line ("    cache                               Add package to the local cache");
       Text_IO.Put_Line ("    help                                Show this message");
       Text_IO.Put_Line ("    version                             Display version");
    end Execute_Help;
@@ -492,7 +412,7 @@ package body Tada.Commands is
       use Directories;
       use Templates;
 
-      New_Package : constant Packages.Package_Info := Packages.Create (Cmd.Package_Name.Element, "0.1.0");
+      New_Package : constant Packages.Package_Info := Packages.Create (Cmd.Package_Name.Element, "0.1.0-dev");
       Root : constant String := Full_Name (New_Package.Name);
    begin
       Text_IO.Put_Line ("Creating new package (" & Image (Cmd.Package_Type) & ")");
@@ -511,12 +431,11 @@ package body Tada.Commands is
       Emit (Compose (Root, New_Package.GPR_Name), Write_GPR_Main'Access, New_Package.Name, Cmd.Package_Type);
       Emit (Compose (Root, New_Package.GPR_Config_Name), Write_GPR_Config'Access, New_Package.Name);
       Emit (Compose (Root, New_Package.GPR_Deps_Name), Write_GPR_Deps'Access, New_Package.Name, Package_Info_Vectors.Empty_Vector);
+      Emit (Compose (Root, New_Package.GPR_Tests_Deps_Name), Write_GPR_Deps'Access, New_Package.Name & "_tests", Package_Info_Vectors.Empty_Vector);
       Emit (Compose (Root, New_Package.GPR_Tests_Name), Write_GPR_Tests'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), "tests_main.adb"), Write_Test_Runner'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.ads"), Write_Test_Suite_Spec'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_suite.adb"), Write_Test_Suite_Body'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.ads"), Write_Test_Spec'Access, New_Package.Name);
-      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_test.adb"), Write_Test_Body'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), "tests_main.adb"), Write_Tests_Runner'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_tests.ads"), Write_Tests_Spec'Access, New_Package.Name);
+      Emit (Compose (Compose (Root, "tests"), New_Package.Name &  "_tests.adb"), Write_Tests_Body'Access, New_Package.Name);
       Emit (Compose (Compose (Root, "src"), New_Package.Name &  ".ads"), Write_Root_Package_Spec'Access, New_Package.Name, Cmd.Package_Type);
 
       case Cmd.Package_Type is
@@ -532,6 +451,52 @@ package body Tada.Commands is
 
          raise Execute_Error with Exceptions.Exception_Message (E);
    end Execute_Init;
+
+   procedure Execute_Install is
+      Index : constant Package_Indexes.Package_Index := Package_Indexes.Read (Package_Index_Url);
+      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Deps_Queue : Package_Info_Queues.List := Package_Info_Queues.Empty_List;
+      Visited_Deps : Package_Info_Maps.Map := Package_Info_Maps.Empty_Map;
+   begin
+      Enqueue_Deps (Deps_Queue, Tada_Manifest, "dependencies");
+      Enqueue_Deps (Deps_Queue, Tada_Manifest, "dev-dependencies");
+
+      while not Deps_Queue.Is_Empty loop
+         declare
+            Dep : constant Packages.Package_Info := Deps_Queue.First_Element;
+         begin
+            Deps_Queue.Delete_First;
+
+            if Visited_Deps.Contains (Dep.Name) then
+               if Visited_Deps (Dep.Name).Version /= Dep.Version then
+                  raise Execute_Error with "version conflict for '" & Dep.Name & "': " &
+                                           Visited_Deps (Dep.Name).Version & " vs " & Dep.Version;
+               end if;
+            else
+               Visited_Deps.Insert (Dep.Name, Dep);
+
+               if not Package_Cache.Is_Cached (Dep) then
+                  declare
+                     Package_Entry : constant Package_Indexes.Package_Index_Entry := Package_Indexes.Find (Index, Dep);
+                  begin
+                     Package_Indexes.Download (Package_Entry);
+                     Package_Indexes.Verify_Checksum (Package_Entry);
+                     Package_Indexes.Extract (Package_Entry);
+                     Package_Cache.Cache_Package (Package_Indexes.Package_Tmp_Path (Package_Entry));
+                  end;
+               end if;
+
+               declare
+                  Dep_Manifest : constant Config.Manifest := Config.Read (Package_Cache.Manifest_Path (Dep));
+               begin
+                  Enqueue_Deps (Deps_Queue, Dep_Manifest, "dependencies");
+               end;
+            end if;
+         end;
+      end loop;
+
+      Package_Indexes.Cleanup;
+   end Execute_Install;
 
    procedure Execute_Run (Cmd : Command) is
       Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
@@ -554,12 +519,13 @@ package body Tada.Commands is
    end Execute_Version;
 
    procedure Execute_Test (Cmd : Command) is
-      Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
+      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
       Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "tests");
    begin
-      Generate_Deps;
+      Generate_Deps (Tada_Manifest, Include_Dev_Deps => True);
 
-      if not Run_GPRBuild (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
+      if not Runners.Run_GPRBuild (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
          raise Execute_Error with "test build failed";
       end if;
 
@@ -574,15 +540,23 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Help | Init | Version =>
             null;
-         when Build | Cache | Clean | Run | Test =>
+         when Build | Clean | Install | Run | Test =>
             if not In_Package_Root then
                raise Execute_Error with "could not find '" & Packages.Manifest_Name & "' in current directory";
             end if;
       end case;
 
       case Cmd.Kind is
-         when Cache | Clean | Help | Init | Version =>
+         when Clean | Help | Init | Version =>
             null;
+         when Install =>
+            if not Exec_On_Path ("curl") then
+               raise Execute_Error with "could not find executable 'curl' in PATH";
+            end if;
+
+            if not Exec_On_Path ("tar") then
+               raise Execute_Error with "could not find executable 'tar' in PATH";
+            end if;
          when Build | Run | Test =>
             if not Exec_On_Path ("gprbuild") then
                raise Execute_Error with "could not find executable 'gprbuild' in PATH";
@@ -591,10 +565,10 @@ package body Tada.Commands is
 
       case Cmd.Kind is
          when Build => Execute_Build (Cmd);
-         when Cache => Execute_Cache;
          when Clean => Execute_Clean;
          when Help => Execute_Help;
          when Init => Execute_Init (Cmd);
+         when Install => Execute_Install;
          when Run => Execute_Run (Cmd);
          when Test => Execute_Test (Cmd);
          when Version => Execute_Version;

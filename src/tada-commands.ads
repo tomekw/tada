@@ -5,10 +5,10 @@ package Tada.Commands is
    Execute_Error : exception;
 
    type Command_Kind is (Build,
-                         Cache,
                          Clean,
                          Help,
                          Init,
+                         Install,
                          Run,
                          Test,
                          Version);
@@ -29,7 +29,7 @@ package Tada.Commands is
          when Test =>
             Test_Profile : Profile_Kind;
 
-         when Cache | Clean | Help | Version =>
+         when Clean | Help | Install | Version =>
             null;
       end case;
    end record;

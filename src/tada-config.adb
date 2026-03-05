@@ -19,7 +19,8 @@ package body Tada.Config is
                Section_Name : constant String := Section_Maps.Key (C);
             begin
                if Section_Name /= "package" and then
-                  Section_Name /= "dependencies"
+                  Section_Name /= "dependencies" and then
+                  Section_Name /= "dev-dependencies"
                then
                   raise Manifest_Error with "unknown section [" & Section_Name & "]";
                end if;
@@ -67,6 +68,22 @@ package body Tada.Config is
                Dependencies_Section : constant String_Maps.Map := Tada_Manifest.Sections ("dependencies");
             begin
                for C in Dependencies_Section.Iterate loop
+                  declare
+                     Dependency_Name : constant String := String_Maps.Key (C);
+                  begin
+                     if not Packages.Is_Valid_Name (Dependency_Name) then
+                        raise Manifest_Error with "invalid dependency name '" & Dependency_Name & "'";
+                     end if;
+                  end;
+               end loop;
+            end;
+         end if;
+
+         if Tada_Manifest.Sections.Contains ("dev-dependencies") then
+            declare
+               Dev_Dependencies_Section : constant String_Maps.Map := Tada_Manifest.Sections ("dev-dependencies");
+            begin
+               for C in Dev_Dependencies_Section.Iterate loop
                   declare
                      Dependency_Name : constant String := String_Maps.Key (C);
                   begin

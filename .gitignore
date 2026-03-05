@@ -1,2 +1,3 @@
 target/
 tada_deps.gpr
+tada_tests_deps.gpr

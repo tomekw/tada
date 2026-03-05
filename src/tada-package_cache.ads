@@ -3,7 +3,9 @@ with Tada.Packages;
 package Tada.Package_Cache is
    use Packages;
 
-   function Root_Path return String;
+   Package_Cache_Error : exception;
+
+   function Cache_Path return String;
 
    function Package_Path (P : Package_Info) return String;
 
@@ -16,4 +18,6 @@ package Tada.Package_Cache is
    function GPR_Deps_Path (P : Package_Info) return String;
 
    function Is_Cached (P : Package_Info) return Boolean;
+
+   procedure Cache_Package (Package_Tmp_Path : String);
 end Tada.Package_Cache;

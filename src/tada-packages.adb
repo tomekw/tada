@@ -116,6 +116,11 @@ package body Tada.Packages is
       return Self.Name & "_deps.gpr";
    end GPR_Deps_Name;
 
+   function GPR_Tests_Deps_Name (Self : Package_Info) return String is
+   begin
+      return Self.Name & "_tests_deps.gpr";
+   end GPR_Tests_Deps_Name;
+
    function GPR_Tests_Name (Self : Package_Info) return String is
    begin
       return Self.Name & "_tests.gpr";

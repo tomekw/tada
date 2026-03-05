@@ -1,6 +1,6 @@
 with "tada_config.gpr";
+with "tada_tests_deps.gpr";
 with "tada.gpr";
-with "aunit.gpr";
 
 project Tada_Tests is
 

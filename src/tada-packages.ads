@@ -17,6 +17,8 @@ package Tada.Packages is
 
    function GPR_Deps_Name (Self : Package_Info) return String;
 
+   function GPR_Tests_Deps_Name (Self : Package_Info) return String;
+
    function GPR_Tests_Name (Self : Package_Info) return String;
 private
 
