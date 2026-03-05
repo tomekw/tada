@@ -106,17 +106,9 @@ tada test
 
 ## Packages
 
-For now, there are only two that I know of:
-
-* tackle (https://github.com/tomekw/tackle)
-
-  Or TACkLe. Or Tomek's Ada Class Library. Everything I find useful and I think should be a part of the (extended) standard library.
-
-* testy (https://github.com/tomekw/testy)
-
-  Ada testing framework
+See the [Packages Index](https://github.com/tadapm/tada-packages).
   
-If there's something you have built with Tada, and would like to have it included here, let me know!
+If there's something you have built with Tada, and would like to have it included in the index, let me know!
 
 ## Disclaimer
 
