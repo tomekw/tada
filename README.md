@@ -6,6 +6,13 @@ Tada handles building, testing, and running Ada packages. It wraps GPRbuild
 with sensible defaults and a simple package manifest (`tada.toml`), so you
 spend less time writing build scripts and more time writing Ada.
 
+## Rationale
+
+Tada is a project for personal use. I know [Alire](https://alire.ada.dev/) exists, is more feature rich and has hundreds of packages.
+And that's fine. Tada is something I always wanted to build. I write Ada for fun and decided to build many projects in it to understand
+how the foundational pieces work under the hood. I plan to release more projects in Ada in the near future, and I want to create my own
+little programming world around the language. I hope someone finds it useful.
+
 ## Status
 
 This is alpha software. I'm actively working it. YMMV.
