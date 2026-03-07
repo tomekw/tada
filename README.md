@@ -53,13 +53,13 @@ tada build --profile release
 Usage: tada [command] [options]
 
 Commands:
-    init <name> [--exe|--lib]           Create a new package
     build [--profile <p>]               Compile the package
-    run [--profile <p>] [-- <args>...]  Build and run the executable
-    test [--profile <p>]                Build and run the tests
-    install                             Install dependencies
     clean                               Remove build artifacts
     help                                Show this message
+    init <name> [--exe|--lib]           Create a new package
+    install                             Install dependencies
+    run [--profile <p>] [-- <args>...]  Build and run the executable
+    test [--profile <p>]                Build and run the tests
     version                             Display version
 ```
 

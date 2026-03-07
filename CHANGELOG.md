@@ -1,5 +1,7 @@
 ## unreleased
 
+* `tada help`: commands in the alphabetical order
+
 ## 0.5.0
 
 * add `tada install` command: install packages from index

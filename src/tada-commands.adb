@@ -398,13 +398,13 @@ package body Tada.Commands is
       Text_IO.Put_Line ("Usage: tada [command] [options]");
       Text_IO.New_Line;
       Text_IO.Put_Line ("Commands:");
-      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
       Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
-      Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
-      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the tests");
-      Text_IO.Put_Line ("    install                             Install dependencies");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
       Text_IO.Put_Line ("    help                                Show this message");
+      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
+      Text_IO.Put_Line ("    install                             Install dependencies");
+      Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
+      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the tests");
       Text_IO.Put_Line ("    version                             Display version");
    end Execute_Help;
 
