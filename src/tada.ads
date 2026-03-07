@@ -1,7 +1,7 @@
 with Ada.Containers.Indefinite_Holders;
 
 package Tada is
-   Version : constant String := "0.5.0";
+   Version : constant String := "0.6.0";
 
    Package_Index_Url : constant String :=
      "https://raw.githubusercontent.com/tadapm/tada-packages/refs/heads/main/index";
