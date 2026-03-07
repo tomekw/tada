@@ -1,0 +1,3 @@
+*.ads text eol=lf
+*.adb text eol=lf
+*.gpr text eol=lf
