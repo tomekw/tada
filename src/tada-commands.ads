@@ -5,6 +5,7 @@ package Tada.Commands is
    Execute_Error : exception;
 
    type Command_Kind is (Build,
+                         Cache,
                          Clean,
                          Help,
                          Init,
@@ -20,6 +21,8 @@ package Tada.Commands is
       case Kind is
          when Build =>
             Build_Profile : Profile_Kind;
+         when Cache =>
+            Force : Boolean;
          when Init =>
             Package_Name : String_Holders.Holder;
             Package_Type : Package_Kind;

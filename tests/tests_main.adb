@@ -32,6 +32,9 @@ begin
    Test_Runner.Add ("init cAmEl parses to Init, kind: exe", Tada_Commands_Tests.Test_Parse_Init_Name_Camel'Access);
    Test_Runner.Add ("init package raises Parse_Error", Tada_Commands_Tests.Test_Parse_Init_Name_Package'Access);
    Test_Runner.Add ("install parses to Install", Tada_Commands_Tests.Test_Parse_Install'Access);
+   Test_Runner.Add ("cache parses to Cache, force: false", Tada_Commands_Tests.Test_Parse_Cache'Access);
+   Test_Runner.Add ("cache --force parses to Cache, force: true", Tada_Commands_Tests.Test_Parse_Cache_Force'Access);
+   Test_Runner.Add ("cache --foo raises Parse_Error", Tada_Commands_Tests.Test_Parse_Cache_Foo'Access);
 
    Test_Runner.Add ("Package name is validated", Tada_Packages_Tests.Test_Validate_Package_Names'Access);
 

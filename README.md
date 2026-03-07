@@ -54,6 +54,7 @@ Usage: tada [command] [options]
 
 Commands:
     build [--profile <p>]               Compile the package
+    cache                               Install package to the local cache
     clean                               Remove build artifacts
     help                                Show this message
     init <name> [--exe|--lib]           Create a new package
@@ -62,8 +63,6 @@ Commands:
     test [--profile <p>]                Build and run the tests
     version                             Display version
 ```
-
-The workflow, for now, is still somewhat manual:
 
 1. Create a new package with `tada init`, either a binary with `--exe` or a library with `--lib`.
 1. Run `tada install` to install dependencies.
@@ -77,6 +76,8 @@ To add a new dependency:
 1. Add the dependency to your `tada.toml`, e.g. `bar = "0.5.2"` under `[dependencies]` or `[dev-dependencies]`.
 1. Run `tada install`.
 1. Use `with` to import the dependency's units in your Ada code. Build, test, and run as usual.
+
+Use `tada cache` to install the current package into the local cache for use as a dependency.
 
 ## Manifest file
 

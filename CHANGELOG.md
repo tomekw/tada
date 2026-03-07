@@ -1,6 +1,7 @@
 ## unreleased
 
 * `tada help`: commands in the alphabetical order
+* bring back `tada cache`: install package to the local cache
 
 ## 0.5.0
 

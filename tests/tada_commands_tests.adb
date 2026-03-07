@@ -205,4 +205,28 @@ package body Tada_Commands_Tests is
    begin
       T.Expect (Commands.Parse (Args) = (Kind => Install), "Expected command: Install");
    end Test_Parse_Install;
+
+   procedure Test_Parse_Cache (T : in out Test_Context) is
+      Args : constant Argument_List.Vector := ["cache"];
+   begin
+      T.Expect (Commands.Parse (Args) = (Kind => Cache, Force => False), "Expected command: Cache, Force: False");
+   end Test_Parse_Cache;
+
+   procedure Test_Parse_Cache_Force (T : in out Test_Context) is
+      Args : constant Argument_List.Vector := ["cache", "--force"];
+   begin
+      T.Expect (Commands.Parse (Args) = (Kind => Cache, Force => True), "Expected command: Cache, Force: True");
+   end Test_Parse_Cache_Force;
+
+   procedure Parse_Cache_Force_Foo is
+      Args : constant Argument_List.Vector := ["cache", "--foo"];
+      Unused_Command : Command;
+   begin
+      Unused_Command := Commands.Parse (Args);
+   end Parse_Cache_Force_Foo;
+
+   procedure Test_Parse_Cache_Foo (T : in out Test_Context) is
+   begin
+      T.Expect_Raises (Parse_Cache_Force_Foo'Access, Parse_Error'Identity, "invalid option '--foo'");
+   end Test_Parse_Cache_Foo;
 end Tada_Commands_Tests;
