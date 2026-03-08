@@ -7,7 +7,7 @@ with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
-with Tada.Config;
+with Tada.Manifests;
 with Tada.Package_Cache;
 with Tada.Package_Indexes;
 with Tada.Packages;
@@ -254,15 +254,15 @@ package body Tada.Commands is
    end Target_Bin_Path;
 
    procedure Enqueue_Deps (Deps_Queue : in out Package_Info_Queues.List;
-                           Package_Manifest : Config.Manifest;
+                           Package_Manifest : Manifests.Manifest;
                            Section_Name : String)
    is
    begin
       if Package_Manifest.Sections.Contains (Section_Name) then
          for C in Package_Manifest.Sections (Section_Name).Iterate loop
             declare
-               Name : constant String := Config.String_Maps.Key (C);
-               Version : constant String := Config.String_Maps.Element (C);
+               Name : constant String := Manifests.String_Maps.Key (C);
+               Version : constant String := Manifests.String_Maps.Element (C);
             begin
                Deps_Queue.Append (Packages.Create (Name, Version));
             end;
@@ -270,7 +270,7 @@ package body Tada.Commands is
       end if;
    end Enqueue_Deps;
 
-   procedure Generate_Deps (Tada_Manifest : Config.Manifest; Include_Dev_Deps : Boolean) is
+   procedure Generate_Deps (Tada_Manifest : Manifests.Manifest; Include_Dev_Deps : Boolean) is
       use Packages;
       use Templates;
 
@@ -302,7 +302,7 @@ package body Tada.Commands is
                   Missing_Deps.Append (Dep);
                else
                   declare
-                     Dep_Manifest : constant Config.Manifest := Config.Read (Package_Cache.Manifest_Path (Dep));
+                     Dep_Manifest : constant Manifests.Manifest := Manifests.Read (Package_Cache.Manifest_Path (Dep));
                   begin
                      Enqueue_Deps (Deps_Queue, Dep_Manifest, "dependencies");
                   end;
@@ -333,13 +333,13 @@ package body Tada.Commands is
       for C in Visited_Deps.Iterate loop
          declare
             Dep : constant Package_Info := Package_Info_Maps.Element (C);
-            Dep_Manifest : constant Config.Manifest := Config.Read (Package_Cache.Manifest_Path (Dep));
+            Dep_Manifest : constant Manifests.Manifest := Manifests.Read (Package_Cache.Manifest_Path (Dep));
             Deps_To_Write : Package_Info_Vectors.Vector := Package_Info_Vectors.Empty_Vector;
          begin
             if Dep_Manifest.Sections.Contains ("dependencies") then
                for D in Dep_Manifest.Sections ("dependencies").Iterate loop
                   declare
-                     Name : constant String := Config.String_Maps.Key (D);
+                     Name : constant String := Manifests.String_Maps.Key (D);
                   begin
                      Deps_To_Write.Append (Visited_Deps (Name));
                   end;
@@ -361,7 +361,7 @@ package body Tada.Commands is
             if Tada_Manifest.Sections.Contains ("dependencies") then
                for C in Tada_Manifest.Sections ("dependencies").Iterate loop
                   declare
-                     Name : constant String := Config.String_Maps.Key (C);
+                     Name : constant String := Manifests.String_Maps.Key (C);
                   begin
                      Deps_To_Write.Append (Visited_Deps (Name));
                   end;
@@ -378,7 +378,7 @@ package body Tada.Commands is
                if Tada_Manifest.Sections.Contains ("dev-dependencies") then
                   for C in Tada_Manifest.Sections ("dev-dependencies").Iterate loop
                      declare
-                        Name : constant String := Config.String_Maps.Key (C);
+                        Name : constant String := Manifests.String_Maps.Key (C);
                      begin
                         Deps_To_Write.Append (Visited_Deps (Name));
                      end;
@@ -392,7 +392,7 @@ package body Tada.Commands is
    end Generate_Deps;
 
    procedure Execute_Build (Cmd : Command) is
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
    begin
       Generate_Deps (Tada_Manifest, Include_Dev_Deps => False);
@@ -411,7 +411,7 @@ package body Tada.Commands is
    end Execute_Clean;
 
    procedure Execute_Cache (Cmd : Command) is
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Tada_Package : constant Packages.Package_Info := Packages.Create
         (Tada_Manifest.Sections ("package") ("name"),
          Tada_Manifest.Sections ("package") ("version"));
@@ -487,7 +487,7 @@ package body Tada.Commands is
 
    procedure Execute_Install is
       Index : constant Package_Indexes.Package_Index := Package_Indexes.Read (Package_Index_Url);
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Deps_Queue : Package_Info_Queues.List := Package_Info_Queues.Empty_List;
       Visited_Deps : Package_Info_Maps.Map := Package_Info_Maps.Empty_Map;
    begin
@@ -520,7 +520,7 @@ package body Tada.Commands is
                end if;
 
                declare
-                  Dep_Manifest : constant Config.Manifest := Config.Read (Package_Cache.Manifest_Path (Dep));
+                  Dep_Manifest : constant Manifests.Manifest := Manifests.Read (Package_Cache.Manifest_Path (Dep));
                begin
                   Enqueue_Deps (Deps_Queue, Dep_Manifest, "dependencies");
                end;
@@ -532,7 +532,7 @@ package body Tada.Commands is
    end Execute_Install;
 
    procedure Execute_Run (Cmd : Command) is
-      Package_Name : constant String := Config.Read (Packages.Manifest_Name).Sections ("package") ("name");
+      Package_Name : constant String := Manifests.Read (Packages.Manifest_Name).Sections ("package") ("name");
       Build_Cmd : constant Command := (Kind => Build, Build_Profile => Cmd.Run_Profile);
    begin
       Execute_Build (Build_Cmd);
@@ -552,7 +552,7 @@ package body Tada.Commands is
    end Execute_Version;
 
    procedure Execute_Test (Cmd : Command) is
-      Tada_Manifest : constant Config.Manifest := Config.Read (Packages.Manifest_Name);
+      Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
       Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "tests");
    begin

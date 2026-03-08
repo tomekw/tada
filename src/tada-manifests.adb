@@ -4,7 +4,7 @@ with Ada.Text_IO;
 
 with Tada.Packages;
 
-package body Tada.Config is
+package body Tada.Manifests is
    function Read (Manifest_Path : String) return Manifest is
       Manifest_File : Text_IO.File_Type;
       Tada_Manifest : Manifest;
@@ -202,4 +202,4 @@ package body Tada.Config is
 
          raise;
    end Read;
-end Tada.Config;
+end Tada.Manifests;

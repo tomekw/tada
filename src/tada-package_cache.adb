@@ -5,7 +5,7 @@ with Ada.Text_IO;
 
 with GNAT.OS_Lib;
 
-with Tada.Config;
+with Tada.Manifests;
 
 package body Tada.Package_Cache is
    use Ada;
@@ -89,7 +89,7 @@ package body Tada.Package_Cache is
    end Copy_Tree;
 
    procedure Cache_Package (Package_Tmp_Path : String) is
-      Tada_Manifest : constant Config.Manifest := Config.Read (Compose (Package_Tmp_Path, Packages.Manifest_Name));
+      Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Compose (Package_Tmp_Path, Packages.Manifest_Name));
       Tada_Package : constant Packages.Package_Info :=
         Packages.Create (Tada_Manifest.Sections ("package") ("name"),
                          Tada_Manifest.Sections ("package") ("version"));

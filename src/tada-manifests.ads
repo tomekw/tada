@@ -1,7 +1,7 @@
 with Ada.Containers.Indefinite_Hashed_Maps;
 with Ada.Strings.Hash;
 
-package Tada.Config is
+package Tada.Manifests is
    use Ada;
 
    Manifest_Error : exception;
@@ -24,4 +24,4 @@ package Tada.Config is
    end record;
 
    function Read (Manifest_Path : String) return Manifest;
-end Tada.Config;
+end Tada.Manifests;
