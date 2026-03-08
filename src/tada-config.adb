@@ -50,6 +50,14 @@ package body Tada.Config is
                raise Manifest_Error with "missing 'version' in [package]";
             end if;
 
+            declare
+               Package_Version : constant String := Package_Section ("version");
+            begin
+               if not Packages.Is_Valid_Version (Package_Version) then
+                  raise Manifest_Error with "invalid package version '" & Package_Version & "'";
+               end if;
+            end;
+
             for C in Package_Section.Iterate loop
                declare
                   Key : constant String := String_Maps.Key (C);
@@ -70,9 +78,14 @@ package body Tada.Config is
                for C in Dependencies_Section.Iterate loop
                   declare
                      Dependency_Name : constant String := String_Maps.Key (C);
+                     Dependency_Version : constant String := String_Maps.Element (C);
                   begin
                      if not Packages.Is_Valid_Name (Dependency_Name) then
                         raise Manifest_Error with "invalid dependency name '" & Dependency_Name & "'";
+                     end if;
+
+                     if not Packages.Is_Valid_Version (Dependency_Version) then
+                        raise Manifest_Error with "invalid dependency version '" & Dependency_Version & "'";
                      end if;
                   end;
                end loop;
@@ -86,9 +99,14 @@ package body Tada.Config is
                for C in Dev_Dependencies_Section.Iterate loop
                   declare
                      Dependency_Name : constant String := String_Maps.Key (C);
+                     Dependency_Version : constant String := String_Maps.Element (C);
                   begin
                      if not Packages.Is_Valid_Name (Dependency_Name) then
                         raise Manifest_Error with "invalid dependency name '" & Dependency_Name & "'";
+                     end if;
+
+                     if not Packages.Is_Valid_Version (Dependency_Version) then
+                        raise Manifest_Error with "invalid dependency version '" & Dependency_Version & "'";
                      end if;
                   end;
                end loop;

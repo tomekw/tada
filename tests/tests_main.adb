@@ -37,6 +37,7 @@ begin
    Test_Runner.Add ("cache --foo raises Parse_Error", Tada_Commands_Tests.Test_Parse_Cache_Foo'Access);
 
    Test_Runner.Add ("Package name is validated", Tada_Packages_Tests.Test_Validate_Package_Names'Access);
+   Test_Runner.Add ("Package version is validated", Tada_Packages_Tests.Test_Validate_Package_Versions'Access);
 
    Test_Runner.Run (Test_Reporter);
 end Tests_Main;

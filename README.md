@@ -104,6 +104,11 @@ testy = "0.1.0"
 * can't end with an underscore
 * can't have two consecutive underscores
 
+## Package versioning rules
+
+* [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`
+* optional prerelease tag, example: `0.1.0-dev`
+
 ## Testing
 
 Tada's own test suite uses [Testy](https://github.com/tomekw/testy):

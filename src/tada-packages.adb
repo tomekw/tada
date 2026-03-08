@@ -1,5 +1,6 @@
 with Ada.Characters.Handling;
 with Ada.Containers.Indefinite_Vectors;
+with Ada.Strings.Fixed;
 
 package body Tada.Packages is
    use Ada;
@@ -78,6 +79,97 @@ package body Tada.Packages is
 
       return True;
    end Is_Valid_Name;
+
+   function Is_Valid_Segment (Segment : String) return Boolean is
+      use Characters.Handling;
+   begin
+      if Segment'Length = 0 then
+         return False;
+      end if;
+
+      for C of Segment loop
+         if not Is_Digit (C) then
+            return False;
+         end if;
+      end loop;
+
+      if Segment (Segment'First) = '0' and then
+         Segment'Length > 1
+      then
+         return False;
+      end if;
+
+      return True;
+   end Is_Valid_Segment;
+
+   function Is_Valid_Version (Version : String) return Boolean is
+      use Characters.Handling;
+
+      Dot_One : Natural;
+      Dot_Two : Natural;
+      Dot_Three : Natural;
+   begin
+      if Version'Length < 5 then
+         return False;
+      end if;
+
+      Dot_One := Strings.Fixed.Index (Version, ".", From => Version'First);
+      if Dot_One = 0 then
+         return False;
+      end if;
+
+      Dot_Two := Strings.Fixed.Index (Version, ".", From => Dot_One + 1);
+      if Dot_Two = 0 then
+         return False;
+      end if;
+
+      Dot_Three := Strings.Fixed.Index (Version, ".", From => Dot_Two + 1);
+      if Dot_Three /= 0 then
+         return False;
+      end if;
+
+      declare
+         Major : constant String := Version (Version'First .. Dot_One - 1);
+         Minor : constant String := Version (Dot_One + 1 .. Dot_Two - 1);
+
+         Dash : constant Natural := Strings.Fixed.Index (Version, "-", From => Dot_Two + 1);
+      begin
+         if not Is_Valid_Segment (Major) then
+            return False;
+         end if;
+
+         if not Is_Valid_Segment (Minor) then
+            return False;
+         end if;
+
+         if Dash = 0 then
+            return Is_Valid_Segment (Version (Dot_Two + 1 .. Version'Last));
+         else
+            if not Is_Valid_Segment (Version (Dot_Two + 1 .. Dash - 1)) then
+               return False;
+            end if;
+
+            declare
+               Prerelease : constant String := Version (Dash + 1 .. Version'Last);
+            begin
+               if Prerelease'Length = 0 then
+                  return False;
+               end if;
+
+               for C of Prerelease loop
+                  if not Is_Letter (C) and then
+                     not Is_Digit (C) and then
+                     C /= '_'
+                  then
+                     return False;
+                  end if;
+               end loop;
+            end;
+         end if;
+      end;
+
+      return True;
+   end Is_Valid_Version;
 
    function Create (Name : String; Version : String) return Package_Info is
       use String_Holders;

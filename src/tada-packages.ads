@@ -5,6 +5,8 @@ package Tada.Packages is
 
    function Is_Valid_Name (Name : String) return Boolean;
 
+   function Is_Valid_Version (Version : String) return Boolean;
+
    function Create (Name : String; Version : String) return Package_Info;
 
    function Name (Self : Package_Info) return String;

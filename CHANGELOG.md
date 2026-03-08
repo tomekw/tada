@@ -1,5 +1,7 @@
 ## unreleased
 
+* validate package versions: Semver + optional prerelease tag, example: `0.1.0-dev`
+
 ## 0.6.0
 
 * `tada help`: commands in the alphabetical order
