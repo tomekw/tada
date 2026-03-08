@@ -1,6 +1,10 @@
+with Ada.Characters.Latin_1;
 with Ada.Directories;
+with Ada.Streams.Stream_IO;
 with Ada.Strings.Fixed;
 with Ada.Text_IO;
+
+with GNAT.SHA256;
 
 with Tada.Package_Cache;
 with Tada.Runners;
@@ -123,28 +127,64 @@ package body Tada.Package_Indexes is
 
    procedure Download (P : Package_Index_Entry) is
    begin
+      Text_IO.Put_Line ("Downloading package '" & P.Name.Element & " " & P.Version.Element & "'...");
+
       begin
          Create_Path (Package_Index_Tmp_Path);
       exception
          when Use_Error =>
             raise Package_Index_Error with "unable to create '" & Package_Tmp_Path (P) & "'";
       end;
-
-      Text_IO.Put_Line ("Downloading package '" & P.Name.Element & " " & P.Version.Element & "'...");
       if not Runners.Run_CURL (P.Url.Element, Package_Archive_Path (P)) then
          raise Package_Index_Error with "unable to download package from '" & P.Url.Element & "'";
       end if;
    end Download;
 
    procedure Verify_Checksum (P : Package_Index_Entry) is
+      use Ada.Streams;
+      use GNAT;
+
+      File : Stream_IO.File_Type;
+      Buffer : Stream_Element_Array (1 .. 8192);
+      Last : Stream_Element_Offset;
+      Ctx : SHA256.Context := SHA256.Initial_Context;
    begin
-      --  TODO: Stub for now
       Text_IO.Put_Line ("Verifying package '" & P.Name.Element & " " & P.Version.Element & "'...");
+
+      begin
+         Stream_IO.Open (File, Stream_IO.In_File, Package_Archive_Path (P));
+      exception
+         when Stream_IO.Name_Error | Stream_IO.Use_Error =>
+            raise Package_Index_Error with "unable to open archive '" & Package_Archive_Path (P) & "'";
+      end;
+
+      loop
+         Stream_IO.Read (File, Buffer, Last);
+         exit when Last < Buffer'First;
+         SHA256.Update (Ctx, Buffer (Buffer'First .. Last));
+      end loop;
+
+      Stream_IO.Close (File);
+
+      declare
+         use Ada.Characters.Latin_1;
+
+         Hex : constant SHA256.Message_Digest := SHA256.Digest (Ctx);
+      begin
+         if Hex /= P.Checksum.Element then
+            raise Package_Index_Error with
+              "checksum mismatch for '" & P.Name.Element & " " & P.Version.Element & "'" & LF &
+              "expected: '" & P.Checksum.Element & "'" & LF &
+              "     got: '" & Hex & "'" & LF &
+              "the downloaded tarball may be corrupted or tampered with";
+         end if;
+      end;
    end Verify_Checksum;
 
    procedure Extract (P : Package_Index_Entry) is
    begin
       Text_IO.Put_Line ("Extracting package '" & P.Name.Element & " " & P.Version.Element & "'...");
+
       if not Runners.Run_Tar (Package_Archive_Path (P), Package_Index_Tmp_Path) then
          raise Package_Index_Error with "unable to extract package from '" & Package_Archive_Path (P) & "'";
       end if;
