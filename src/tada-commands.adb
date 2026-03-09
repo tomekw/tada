@@ -7,7 +7,7 @@ with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
-with Tada.Configs;
+with Tada.Environments;
 with Tada.Manifests;
 with Tada.Package_Cache;
 with Tada.Package_Indexes;
@@ -170,6 +170,8 @@ package body Tada.Commands is
                        Force => Parse_Force (Arguments));
             when Clean =>
                return (Kind => Clean);
+            when Config =>
+               return (Kind => Config);
             when Help =>
                return (Kind => Help);
             when Init =>
@@ -236,21 +238,13 @@ package body Tada.Commands is
          return False;
    end Run_Target;
 
-   function Get_Exe_Suffix return String is
-      Suffix : OS.String_Access := OS.Get_Target_Executable_Suffix;
-      Result : constant String := Suffix.all;
-   begin
-      OS.Free (Suffix);
-      return Result;
-   end Get_Exe_Suffix;
-
    function Target_Bin_Path (Profile : String; Name : String) return String is
    begin
       return Directories.Compose
         (Containing_Directory =>
            Directories.Compose
              (Directories.Compose ("target", Profile), "bin"),
-         Name => Name) & Get_Exe_Suffix;
+         Name => Name) & Environments.Get_Exe_Suffix;
    end Target_Bin_Path;
 
    procedure Enqueue_Deps (Deps_Queue : in out Package_Info_Queues.List;
@@ -410,6 +404,14 @@ package body Tada.Commands is
       end if;
    end Execute_Clean;
 
+   procedure Execute_Config is
+      Env : constant Environments.Environment := Environments.Init;
+   begin
+      Text_IO.Put_Line ("Toolchain:");
+      Text_IO.Put_Line ("    gnat: " & Env.GNAT_Path & " (" & Env.Config_Source & ")");
+      Text_IO.Put_Line ("    gprbuild: " & Env.GPRBuild_Path & " (" & Env.Config_Source & ")");
+   end Execute_Config;
+
    procedure Execute_Cache (Cmd : Command) is
       Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Tada_Package : constant Packages.Package_Info := Packages.Create
@@ -433,6 +435,7 @@ package body Tada.Commands is
       Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
       Text_IO.Put_Line ("    cache [--force]                     Install package to the local cache, use --force to overwrite");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
+      Text_IO.Put_Line ("    config                              Display configuration");
       Text_IO.Put_Line ("    help                                Show this message");
       Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
       Text_IO.Put_Line ("    install                             Install dependencies");
@@ -571,7 +574,7 @@ package body Tada.Commands is
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
-         when Help | Init | Version =>
+         when Config | Help | Init | Version =>
             null;
          when Build | Cache | Clean | Install | Run | Test =>
             if not In_Package_Root then
@@ -580,7 +583,7 @@ package body Tada.Commands is
       end case;
 
       case Cmd.Kind is
-         when Cache | Clean | Help | Init | Version =>
+         when Cache | Clean | Config | Help | Init | Version =>
             null;
          when Install =>
             if not Exec_On_Path ("curl") then
@@ -600,6 +603,7 @@ package body Tada.Commands is
          when Build => Execute_Build (Cmd);
          when Cache => Execute_Cache (Cmd);
          when Clean => Execute_Clean;
+         when Config => Execute_Config;
          when Help => Execute_Help;
          when Init => Execute_Init (Cmd);
          when Install => Execute_Install;

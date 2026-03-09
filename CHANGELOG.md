@@ -1,6 +1,8 @@
 ## unreleased
 
 * validate package versions: Semver + optional prerelease tag, example: `0.1.0-dev`
+* add `tada config` command: display configuation
+* allow to set local and global toolchain configuration
 
 ## 0.6.0
 

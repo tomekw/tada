@@ -3,19 +3,15 @@ with Ada.Environment_Variables;
 with Ada.Exceptions;
 with Ada.Text_IO;
 
-with GNAT.OS_Lib;
-
+with Tada.Environments;
 with Tada.Manifests;
 
 package body Tada.Package_Cache is
    use Ada.Directories;
 
-   package OS renames GNAT.OS_Lib;
-
    function Cache_Path return String is
-      Is_Windows : constant Boolean := OS.Directory_Separator = '\';
    begin
-      if Is_Windows then
+      if Environments.Is_Windows then
          return Compose (Environment_Variables.Value ("LOCALAPPDATA"), "tada");
       else
          return Compose (Compose (Environment_Variables.Value ("HOME"), ".cache"), "tada");

@@ -56,6 +56,7 @@ Commands:
     build [--profile <p>]               Compile the package
     cache [--force]                     Install package to the local cache, use --force to overwrite
     clean                               Remove build artifacts
+    config                              Display configuration
     help                                Show this message
     init <name> [--exe|--lib]           Create a new package
     install                             Install dependencies
