@@ -54,7 +54,7 @@ Usage: tada [command] [options]
 
 Commands:
     build [--profile <p>]               Compile the package
-    cache                               Install package to the local cache
+    cache [--force]                     Install package to the local cache, use --force to overwrite
     clean                               Remove build artifacts
     help                                Show this message
     init <name> [--exe|--lib]           Create a new package

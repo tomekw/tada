@@ -7,6 +7,7 @@ with Ada.Text_IO;
 with GNAT.OS_Lib;
 with GNAT.Strings;
 
+with Tada.Configs;
 with Tada.Manifests;
 with Tada.Package_Cache;
 with Tada.Package_Indexes;
@@ -16,7 +17,6 @@ with Tada.Runners;
 with Tada.Templates;
 
 package body Tada.Commands is
-   use Ada;
    use Packages.Containers;
 
    package OS renames GNAT.OS_Lib;
@@ -261,8 +261,8 @@ package body Tada.Commands is
       if Package_Manifest.Sections.Contains (Section_Name) then
          for C in Package_Manifest.Sections (Section_Name).Iterate loop
             declare
-               Name : constant String := Manifests.String_Maps.Key (C);
-               Version : constant String := Manifests.String_Maps.Element (C);
+               Name : constant String := String_Maps.Key (C);
+               Version : constant String := String_Maps.Element (C);
             begin
                Deps_Queue.Append (Packages.Create (Name, Version));
             end;
@@ -339,7 +339,7 @@ package body Tada.Commands is
             if Dep_Manifest.Sections.Contains ("dependencies") then
                for D in Dep_Manifest.Sections ("dependencies").Iterate loop
                   declare
-                     Name : constant String := Manifests.String_Maps.Key (D);
+                     Name : constant String := String_Maps.Key (D);
                   begin
                      Deps_To_Write.Append (Visited_Deps (Name));
                   end;
@@ -361,7 +361,7 @@ package body Tada.Commands is
             if Tada_Manifest.Sections.Contains ("dependencies") then
                for C in Tada_Manifest.Sections ("dependencies").Iterate loop
                   declare
-                     Name : constant String := Manifests.String_Maps.Key (C);
+                     Name : constant String := String_Maps.Key (C);
                   begin
                      Deps_To_Write.Append (Visited_Deps (Name));
                   end;
@@ -378,7 +378,7 @@ package body Tada.Commands is
                if Tada_Manifest.Sections.Contains ("dev-dependencies") then
                   for C in Tada_Manifest.Sections ("dev-dependencies").Iterate loop
                      declare
-                        Name : constant String := Manifests.String_Maps.Key (C);
+                        Name : constant String := String_Maps.Key (C);
                      begin
                         Deps_To_Write.Append (Visited_Deps (Name));
                      end;
@@ -431,7 +431,7 @@ package body Tada.Commands is
       Text_IO.New_Line;
       Text_IO.Put_Line ("Commands:");
       Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
-      Text_IO.Put_Line ("    cache                               Install package to the local cache");
+      Text_IO.Put_Line ("    cache [--force]                     Install package to the local cache, use --force to overwrite");
       Text_IO.Put_Line ("    clean                               Remove build artifacts");
       Text_IO.Put_Line ("    help                                Show this message");
       Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");

@@ -3,7 +3,6 @@ with Ada.Text_IO;
 with Tada.Packages.Containers;
 
 package Tada.Templates is
-   use Ada;
    use Ada.Text_IO;
    use Tada.Packages.Containers;
 

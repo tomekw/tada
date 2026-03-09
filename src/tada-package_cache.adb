@@ -8,7 +8,6 @@ with GNAT.OS_Lib;
 with Tada.Manifests;
 
 package body Tada.Package_Cache is
-   use Ada;
    use Ada.Directories;
 
    package OS renames GNAT.OS_Lib;
