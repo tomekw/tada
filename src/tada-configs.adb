@@ -1,10 +1,11 @@
 with Ada.Directories;
+with Ada.Environment_Variables;
 with Ada.Exceptions;
 
 with Tada.TOML;
 
 package body Tada.Configs is
-   procedure Validate (Sections : Section_Maps.Map) is
+   procedure Validate (Sections : in out Section_Maps.Map) is
    begin
       for C in Sections.Iterate loop
          declare
@@ -20,45 +21,67 @@ package body Tada.Configs is
          raise Config_Error with "missing [toolchain] section";
       end if;
 
+      if not Sections ("toolchain").Contains ("gnat_root") then
+         raise Config_Error with "missing 'gnat_root' in [toolchain]";
+      end if;
+
       declare
-         Toolchain_Section : constant String_Maps.Map := Sections ("toolchain");
+         GNAT_Root : constant String := Sections ("toolchain") ("gnat_root");
       begin
-         if not Toolchain_Section.Contains ("gnat_root") then
-            raise Config_Error with "missing 'gnat_root' in [toolchain]";
-         end if;
-
-         declare
-            GNAT_Root : constant String := Toolchain_Section ("gnat_root");
-         begin
-            if not Directories.Exists (GNAT_Root) then
-               raise Config_Error with "gnat_root '" & GNAT_Root & "' doesn't exist";
-            end if;
-         end;
-
-         if not Toolchain_Section.Contains ("gprbuild_root") then
-            raise Config_Error with "missing 'gprbuild_root' in [toolchain]";
-         end if;
-
-         declare
-            GPRBuild_Root : constant String := Toolchain_Section ("gprbuild_root");
-         begin
-            if not Directories.Exists (GPRBuild_Root) then
-               raise Config_Error with "gprbuild_root '" & GPRBuild_Root & "' doesn't exist";
-            end if;
-         end;
-
-         for C in Toolchain_Section.Iterate loop
+         if GNAT_Root (GNAT_Root'First) = '~' then
             declare
-               Key : constant String := String_Maps.Key (C);
+               HOME : constant String := Environment_Variables.Value ("HOME");
             begin
-               if Key /= "gnat_root" and then
-                  Key /= "gprbuild_root"
-               then
-                  raise Config_Error with "unknown key '" & Key & "' in [toolchain]";
-               end if;
+               Sections.Reference ("toolchain").Replace
+                 ("gnat_root", HOME & GNAT_Root (GNAT_Root'First + 1 .. GNAT_Root'Last));
             end;
-         end loop;
+         end if;
       end;
+
+      declare
+         GNAT_Root : constant String := Sections ("toolchain") ("gnat_root");
+      begin
+         if not Directories.Exists (GNAT_Root) then
+            raise Config_Error with "gnat_root '" & GNAT_Root & "' doesn't exist";
+         end if;
+      end;
+
+      if not Sections ("toolchain").Contains ("gprbuild_root") then
+         raise Config_Error with "missing 'gprbuild_root' in [toolchain]";
+      end if;
+
+      declare
+         GPRBuild_Root : constant String := Sections ("toolchain") ("gprbuild_root");
+      begin
+         if GPRBuild_Root (GPRBuild_Root'First) = '~' then
+            declare
+               HOME : constant String := Environment_Variables.Value ("HOME");
+            begin
+               Sections.Reference ("toolchain").Replace
+                 ("gprbuild_root", HOME & GPRBuild_Root (GPRBuild_Root'First + 1 .. GPRBuild_Root'Last));
+            end;
+         end if;
+      end;
+
+      declare
+         GPRBuild_Root : constant String := Sections ("toolchain") ("gprbuild_root");
+      begin
+         if not Directories.Exists (GPRBuild_Root) then
+            raise Config_Error with "gprbuild_root '" & GPRBuild_Root & "' doesn't exist";
+         end if;
+      end;
+
+      for C in Sections ("toolchain").Iterate loop
+         declare
+            Key : constant String := String_Maps.Key (C);
+         begin
+            if Key /= "gnat_root" and then
+               Key /= "gprbuild_root"
+            then
+               raise Config_Error with "unknown key '" & Key & "' in [toolchain]";
+            end if;
+         end;
+      end loop;
    end Validate;
 
    function Read (Config_Path : String) return Config is
