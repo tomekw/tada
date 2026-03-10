@@ -1,6 +1,9 @@
+with Ada.Environment_Variables;
+
 with GNAT.OS_Lib;
 
 with Tada.CL_Arguments;
+with Tada.Environments;
 
 package body Tada.Runners is
    package OS renames GNAT.OS_Lib;
@@ -8,10 +11,13 @@ package body Tada.Runners is
    function Spawn (Executable : String; Arguments : CL_Arguments.Argument_List.Vector) return Boolean is
       use type OS.String_Access;
 
+      Env : constant Environments.Environment := Environments.Init;
+
+      System_PATH : constant String := Environment_Variables.Value ("PATH");
+      PATH_Separator : constant Character := (if Environments.Is_Windows then ';' else ':');
+
       Arguments_Count : constant Natural := Natural (Arguments.Length);
       Args : OS.Argument_List (1 .. Arguments_Count);
-
-      Executable_Path : OS.String_Access := OS.Locate_Exec_On_Path (Executable);
 
       Result : Boolean := False;
    begin
@@ -19,19 +25,29 @@ package body Tada.Runners is
          Args (I) := new String'(Arguments (I));
       end loop;
 
-      if Executable_Path /= null then
-         OS.Spawn (Executable_Path.all, Args, Result);
-      end if;
+      Environment_Variables.Set ("PATH", Env.GNAT_Path & PATH_Separator & Env.GPRBuild_Path & PATH_Separator & System_PATH);
 
-      OS.Free (Executable_Path);
+      OS.Spawn (Environments.Exec_Path (Executable), Args, Result);
+
+      Environment_Variables.Set ("PATH", System_PATH);
+
       for Arg of Args loop
          OS.Free (Arg);
       end loop;
 
       return Result;
    exception
+      when Environments.Environment_Error =>
+         Environment_Variables.Set ("PATH", System_PATH);
+
+         for Arg of Args loop
+            OS.Free (Arg);
+         end loop;
+
+         raise;
       when others =>
-         OS.Free (Executable_Path);
+         Environment_Variables.Set ("PATH", System_PATH);
+
          for Arg of Args loop
             OS.Free (Arg);
          end loop;

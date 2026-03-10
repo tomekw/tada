@@ -6,6 +6,7 @@ package Tada.Commands is
 
    type Command_Kind is (Build,
                          Cache,
+                         Config,
                          Clean,
                          Help,
                          Init,
@@ -32,7 +33,7 @@ package Tada.Commands is
          when Test =>
             Test_Profile : Profile_Kind;
 
-         when Clean | Help | Install | Version =>
+         when Clean | Config | Help | Install | Version =>
             null;
       end case;
    end record;

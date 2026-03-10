@@ -3,8 +3,6 @@ with Ada.Containers.Indefinite_Vectors;
 with Ada.Strings.Fixed;
 
 package body Tada.Packages is
-   use Ada;
-
    package String_Vectors is new Containers.Indefinite_Vectors
      (Index_Type => Positive,
       Element_Type => String);

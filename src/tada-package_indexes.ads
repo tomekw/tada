@@ -3,8 +3,6 @@ with Ada.Containers.Vectors;
 with Tada.Packages;
 
 package Tada.Package_Indexes is
-   use Ada;
-
    Package_Index_Error : exception;
 
    type Package_Index_Entry is record

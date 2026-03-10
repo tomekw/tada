@@ -81,6 +81,7 @@ package body Tada.Templates is
 
    procedure Write_Gitignore (File : File_Type; Name : String) is
    begin
+      Put_Line (File, ".tada/");
       Put_Line (File, "target/");
       Put_Line (File, Name & "_deps.gpr");
       Put_Line (File, Name & "_tests_deps.gpr");
