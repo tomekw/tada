@@ -21,10 +21,23 @@ Tested on Linux x86_64, MacOS ARM and Windows x86_64.
 
 ## Prerequisites
 
-### Debian / Ubuntu
+* curl
+* gnat
+* gprbuild
 
-```bash
-sudo apt install curl gnat gprbuild
+By default, `tada` looks for `gnat` and `gprbuild` on the system `PATH`. You can set up local and global toolchain paths.
+
+* local: `.tada/config.toml` (should be in `.gitignore`)
+* global: `~/.config/tada/config.toml` (`%LOCALAPPDATA%\tada\config.toml` on Windows)
+
+The discovery order is: `local` -> `global` -> `PATH`.
+
+Example `config.toml`:
+
+``` toml
+[toolchain]
+gnat_root = "~/.local/share/alire/toolchains/gnat_native_15.2.1_4640d4b3"
+gprbuild_root = "~/.local/share/alire/toolchains/gprbuild_25.0.1_9a2e6cfb"
 ```
 
 ## Installation
