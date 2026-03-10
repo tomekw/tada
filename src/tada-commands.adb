@@ -583,8 +583,6 @@ package body Tada.Commands is
       end case;
 
       case Cmd.Kind is
-         when Cache | Clean | Config | Help | Init | Version =>
-            null;
          when Install =>
             if not Exec_On_Path ("curl") then
                raise Execute_Error with "could not find executable 'curl' in PATH";
@@ -593,10 +591,8 @@ package body Tada.Commands is
             if not Exec_On_Path ("tar") then
                raise Execute_Error with "could not find executable 'tar' in PATH";
             end if;
-         when Build | Run | Test =>
-            if not Exec_On_Path ("gprbuild") then
-               raise Execute_Error with "could not find executable 'gprbuild' in PATH";
-            end if;
+         when others =>
+            null;
       end case;
 
       case Cmd.Kind is

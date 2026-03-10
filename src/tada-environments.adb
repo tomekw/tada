@@ -61,8 +61,8 @@ package body Tada.Environments is
          Tada_Config : constant Configs.Config := Configs.Read (Config_Path);
          Toolchain : constant String_Maps.Map := Tada_Config.Sections ("toolchain");
       begin
-         return (GNAT_Path_Holder => String_Holders.To_Holder (Compose (Compose (Toolchain ("gnat_root"), "bin"), "gnat") & Get_Exe_Suffix),
-                 GPRBuild_Path_Holder => String_Holders.To_Holder (Compose (Compose (Toolchain ("gprbuild_root"), "bin"), "gprbuild") & Get_Exe_Suffix),
+         return (GNAT_Path_Holder => String_Holders.To_Holder (Compose (Toolchain ("gnat_root"), "bin")),
+                 GPRBuild_Path_Holder => String_Holders.To_Holder (Compose (Toolchain ("gprbuild_root"), "bin")),
                  Config_Source => Source);
       end From_Config;
    begin
@@ -71,8 +71,8 @@ package body Tada.Environments is
       elsif Exists (Global_Config_Path) then
          return From_Config (Global_Config_Path, Global);
       else
-         return (GNAT_Path_Holder => String_Holders.To_Holder (Exec_Path ("gnat")),
-                 GPRBuild_Path_Holder => String_Holders.To_Holder (Exec_Path ("gprbuild")),
+         return (GNAT_Path_Holder => String_Holders.To_Holder (Containing_Directory (Exec_Path ("gnat"))),
+                 GPRBuild_Path_Holder => String_Holders.To_Holder (Containing_Directory (Exec_Path ("gprbuild"))),
                  Config_Source => Path);
       end if;
    end Init;

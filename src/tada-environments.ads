@@ -5,6 +5,8 @@ package Tada.Environments is
 
    function Is_Windows return Boolean;
 
+   function Exec_Path (Exec_Name : String) return String;
+
    function Get_Exe_Suffix return String;
 
    function Init return Environment;
