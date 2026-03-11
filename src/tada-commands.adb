@@ -386,12 +386,13 @@ package body Tada.Commands is
    end Generate_Deps;
 
    procedure Execute_Build (Cmd : Command) is
+      Env : constant Environments.Environment := Environments.Init;
       Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
    begin
       Generate_Deps (Tada_Manifest, Include_Dev_Deps => False);
 
-      if not Runners.Run_GPRBuild (Package_Name, Image (Cmd.Build_Profile)) then
+      if not Runners.Run_GPRBuild (Env, Package_Name, Image (Cmd.Build_Profile)) then
          raise Execute_Error with "build failed";
       end if;
    end Execute_Build;
@@ -555,13 +556,14 @@ package body Tada.Commands is
    end Execute_Version;
 
    procedure Execute_Test (Cmd : Command) is
+      Env : constant Environments.Environment := Environments.Init;
       Tada_Manifest : constant Manifests.Manifest := Manifests.Read (Packages.Manifest_Name);
       Package_Name : constant String := Tada_Manifest.Sections ("package") ("name");
       Exec_Name : constant String := Target_Bin_Path (Image (Cmd.Test_Profile), "tests");
    begin
       Generate_Deps (Tada_Manifest, Include_Dev_Deps => True);
 
-      if not Runners.Run_GPRBuild (Package_Name & "_tests", Image (Cmd.Test_Profile)) then
+      if not Runners.Run_GPRBuild (Env, Package_Name & "_tests", Image (Cmd.Test_Profile)) then
          raise Execute_Error with "test build failed";
       end if;
 

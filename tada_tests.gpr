@@ -3,7 +3,6 @@ with "tada_tests_deps.gpr";
 with "tada.gpr";
 
 project Tada_Tests is
-
    for Source_Dirs use ("tests");
    for Object_Dir use "target/" & Tada_Config.Build_Profile & "/obj-tests";
    for Exec_Dir use "target/" & Tada_Config.Build_Profile & "/bin";
@@ -23,4 +22,8 @@ project Tada_Tests is
       for Default_Switches ("Ada") use ("-Es");
    end Binder;
 
+   package Linker is
+      for Default_Switches ("Ada") use
+        Tada_Config.Linker_Switches;
+   end Linker;
 end Tada_Tests;

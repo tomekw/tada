@@ -3,7 +3,6 @@ with Ada.Environment_Variables;
 with GNAT.OS_Lib;
 
 with Tada.CL_Arguments;
-with Tada.Environments;
 
 package body Tada.Runners is
    package OS renames GNAT.OS_Lib;
@@ -60,9 +59,13 @@ package body Tada.Runners is
       return Spawn ("curl", ["-fsSL", "-o", Target, Source]);
    end Run_CURL;
 
-   function Run_GPRBuild (Project : String; Profile : String) return Boolean is
+   function Run_GPRBuild (Env : Environments.Environment; Project : String; Profile : String) return Boolean is
    begin
-      return Spawn ("gprbuild", ["-P", Project & ".gpr", "-XBUILD_PROFILE=" & Profile, "-p"]);
+      return Spawn ("gprbuild", ["-P", Project & ".gpr",
+                                  "-XBUILD_PROFILE=" & Profile,
+                                  "-XTADA_OS=" & Env.Operating_System,
+                                  "-XTADA_ARCH=" & Env.Architecture,
+                                  "-p"]);
    end Run_GPRBuild;
 
    function Run_Tar (Source : String; Target : String) return Boolean is

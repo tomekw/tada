@@ -1,8 +1,12 @@
 abstract project Tada_Config is
-
    type Build_Profile_Kind is ("debug", "release");
-   Build_Profile : Build_Profile_Kind :=
-     external ("BUILD_PROFILE", "debug");
+   Build_Profile : Build_Profile_Kind := external ("BUILD_PROFILE", "debug");
+
+   type Tada_OS_Kind is ("linux", "windows", "macos", "unknown");
+   Tada_OS : Tada_OS_Kind := external ("TADA_OS", "unknown");
+
+   type Tada_Arch_Kind is ("x86_64", "aarch64", "unknown");
+   Tada_Arch : Tada_Arch_Kind := external ("TADA_ARCH", "unknown");
 
    Common_Switches := ("-gnat2022", "-gnatwa", "-gnata");
    Style_Switches := ("-gnatyaAbCdefhiklnOprStux");
@@ -21,14 +25,18 @@ abstract project Tada_Config is
 
    Ada_Switches := ();
    case Build_Profile is
-      when "debug"   => Ada_Switches := Debug_Switches;
+      when "debug" => Ada_Switches := Debug_Switches;
       when "release" => Ada_Switches := Release_Switches;
    end case;
 
    Linker_Switches := ();
    case Build_Profile is
-      when "debug"   => Linker_Switches := ();
-      when "release"   => Linker_Switches := ();
+      when "debug" => Linker_Switches := ();
+      when "release" =>
+         case Tada_OS is
+            when "macos" => Linker_Switches := ("-Wl,-dead_strip");
+            when "linux" | "windows" => Linker_Switches := ("-Wl,--gc-sections");
+            when "unknown" => Linker_Switches := ();
+         end case;
    end case;
-
 end Tada_Config;
