@@ -92,8 +92,13 @@ package body Tada.Templates is
    begin
       Put_Line (File, "abstract project " & MC & "_Config is");
       Put_Line (File, "   type Build_Profile_Kind is (""debug"", ""release"");");
-      Put_Line (File, "   Build_Profile : Build_Profile_Kind :=");
-      Put_Line (File, "     external (""BUILD_PROFILE"", ""debug"");");
+      Put_Line (File, "   Build_Profile : Build_Profile_Kind := external (""BUILD_PROFILE"", ""debug"");");
+      Put_Line (File, "");
+      Put_Line (File, "   type Tada_OS_Kind is (""linux"", ""windows"", ""macos"", ""unknown"");");
+      Put_Line (File, "   Tada_OS : Tada_OS_Kind := external (""TADA_OS"", ""unknown"");");
+      Put_Line (File, "");
+      Put_Line (File, "   type Tada_Arch_Kind is (""x86_64"", ""aarch64"", ""unknown"");");
+      Put_Line (File, "   Tada_Arch : Tada_Arch_Kind := external (""TADA_ARCH"", ""unknown"");");
       Put_Line (File, "");
       Put_Line (File, "   Common_Switches := (""-gnat2022"", ""-gnatwa"", ""-gnata"");");
       Put_Line (File, "   Style_Switches := (""-gnatyaAbCdefhiklnOprStux"");");
@@ -112,14 +117,19 @@ package body Tada.Templates is
       Put_Line (File, "");
       Put_Line (File, "   Ada_Switches := ();");
       Put_Line (File, "   case Build_Profile is");
-      Put_Line (File, "      when ""debug""   => Ada_Switches := Debug_Switches;");
+      Put_Line (File, "      when ""debug"" => Ada_Switches := Debug_Switches;");
       Put_Line (File, "      when ""release"" => Ada_Switches := Release_Switches;");
       Put_Line (File, "   end case;");
       Put_Line (File, "");
       Put_Line (File, "   Linker_Switches := ();");
       Put_Line (File, "   case Build_Profile is");
-      Put_Line (File, "      when ""debug""   => Linker_Switches := ();");
-      Put_Line (File, "      when ""release"" => Linker_Switches := ();");
+      Put_Line (File, "      when ""debug"" => Linker_Switches := ();");
+      Put_Line (File, "      when ""release"" =>");
+      Put_Line (File, "         case Tada_OS is");
+      Put_Line (File, "            when ""macos"" => Linker_Switches := (""-Wl,-dead_strip"");");
+      Put_Line (File, "            when ""linux"" | ""windows"" => Linker_Switches := (""-Wl,--gc-sections"");");
+      Put_Line (File, "            when ""unknown"" => Linker_Switches := ();");
+      Put_Line (File, "         end case;");
       Put_Line (File, "   end case;");
       Put_Line (File, "end " & MC & "_Config;");
    end Write_GPR_Config;
@@ -210,6 +220,11 @@ package body Tada.Templates is
       Put_Line (File, "   package Binder is");
       Put_Line (File, "      for Default_Switches " & "(""Ada"") use (""-Es"");");
       Put_Line (File, "   end Binder;");
+      Put_Line (File, "");
+      Put_Line (File, "   package Linker is");
+      Put_Line (File, "      for Default_Switches (""Ada"") use");
+      Put_Line (File, "        " & MC & "_Config.Linker_Switches;");
+      Put_Line (File, "   end Linker;");
       Put_Line (File, "end " & MC & "_Tests;");
    end Write_GPR_Tests;
 

@@ -1,5 +1,9 @@
 ## unreleased
 
+* expose Tada_OS (linux, macos, windows, unknown) variable in GPR files
+* expose Tada_Arch (x86_64, aarch64, unknown) variable in GPR files
+* set Linker switches for stripping dead code in the release profile
+
 ## 0.7.0
 
 * validate package versions: Semver + optional prerelease tag, example: `0.1.0-dev`
@@ -30,8 +34,8 @@
 
 ## 0.2.0
 
-* paramatrize `Library_Dir` with build profile
+* parameterize `Library_Dir` with build profile
 
 ## 0.1.0
 
-* initial relase
+* initial release
