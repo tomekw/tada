@@ -1,8 +1,13 @@
 with Ada.Directories;
 with Ada.Environment_Variables;
+with Ada.Strings.Fixed;
 
 with GNAT.OS_Lib;
 with GNAT.Strings;
+
+pragma Warnings (Off, "gnatwi");
+with System.OS_Constants;
+pragma Warnings (On, "gnatwi");
 
 with Tada.Configs;
 
@@ -10,6 +15,32 @@ package body Tada.Environments is
    use Ada.Directories;
 
    package OS renames GNAT.OS_Lib;
+
+   function Architecture (Self : Environment) return String is
+   begin
+      case Self.Architecture is
+         when X86_64 =>
+            return "x86_64";
+         when Aarch64 =>
+            return "aarch64";
+         when Unknown =>
+            return "unknown";
+      end case;
+   end Architecture;
+
+   function Operating_System (Self : Environment) return String is
+   begin
+      case Self.Operating_System is
+         when Linux =>
+            return "linux";
+         when Windows =>
+            return "windows";
+         when MacOS =>
+            return "macos";
+         when Unknown =>
+            return "unknown";
+      end case;
+   end Operating_System;
 
    function Is_Windows return Boolean is
    begin
@@ -56,14 +87,47 @@ package body Tada.Environments is
       end if;
    end Exec_Path;
 
+   function Parse_Operating_System (Target_Name : String) return Operating_System_Kind is
+      use Ada.Strings.Fixed;
+   begin
+      if Index (Target_Name, "linux") /= 0 then
+         return Linux;
+      elsif Index (Target_Name, "mingw") /= 0 or else
+            OS.Directory_Separator = '\'
+      then
+         return Windows;
+      elsif Index (Target_Name, "apple") /= 0 then
+         return MacOS;
+      else
+         return Unknown;
+      end if;
+   end Parse_Operating_System;
+
+   function Parse_Architecture (Target_Name : String) return Architecture_Kind is
+      use Ada.Strings.Fixed;
+   begin
+      if Index (Target_Name, "x86_64") = Target_Name'First then
+         return X86_64;
+      elsif Index (Target_Name, "aarch64") = Target_Name'First then
+         return Aarch64;
+      else
+         return Unknown;
+      end if;
+   end Parse_Architecture;
+
    function Init return Environment is
+      OS : constant Operating_System_Kind := Parse_Operating_System (System.OS_Constants.Target_Name);
+      Arch : constant Architecture_Kind := Parse_Architecture (System.OS_Constants.Target_Name);
+
       function From_Config (Config_Path : String; Source : Config_Source_Kind) return Environment is
          Tada_Config : constant Configs.Config := Configs.Read (Config_Path);
          Toolchain : constant String_Maps.Map := Tada_Config.Sections ("toolchain");
       begin
          return (GNAT_Path_Holder => String_Holders.To_Holder (Compose (Toolchain ("gnat_root"), "bin")),
                  GPRBuild_Path_Holder => String_Holders.To_Holder (Compose (Toolchain ("gprbuild_root"), "bin")),
-                 Config_Source => Source);
+                 Config_Source => Source,
+                 Operating_System => OS,
+                 Architecture => Arch);
       end From_Config;
    begin
       if Exists (Local_Config_Path) then
@@ -73,7 +137,9 @@ package body Tada.Environments is
       else
          return (GNAT_Path_Holder => String_Holders.To_Holder (Containing_Directory (Exec_Path ("gnat"))),
                  GPRBuild_Path_Holder => String_Holders.To_Holder (Containing_Directory (Exec_Path ("gprbuild"))),
-                 Config_Source => Path);
+                 Config_Source => Path,
+                 Operating_System => OS,
+                 Architecture => Arch);
       end if;
    end Init;
 
