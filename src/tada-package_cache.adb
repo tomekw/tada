@@ -53,14 +53,14 @@ package body Tada.Package_Cache is
       return Exists (Manifest_Path (P));
    end Is_Cached;
 
-   procedure Copy_Tree (Source_Path : String; Target_Path : String) is
+   procedure Copy_Tree (Tada_Package : Packages.Package_Info; Source_Path : String; Target_Path : String) is
       Tree_Search : Search_Type;
       Search_Item : Directory_Entry_Type;
       Search_Filter : constant Filter_Type := [Ordinary_File => True,
                                                Directory => True,
                                                Special_File => False];
    begin
-      Create_Directory (Target_Path);
+      Create_Path (Target_Path);
       Start_Search (Tree_Search, Source_Path, "", Search_Filter);
 
       while More_Entries (Tree_Search) loop
@@ -69,13 +69,21 @@ package body Tada.Package_Cache is
          declare
             Entry_Name : constant String := Simple_Name (Search_Item);
          begin
-            if Kind (Search_Item) = Ordinary_File then
+            if Kind (Search_Item) = Ordinary_File and then
+               Entry_Name /= Tada_Package.GPR_Deps_Name and then
+               Entry_Name /= Tada_Package.GPR_Tests_Deps_Name and then
+               Entry_Name /= Tada_Package.GPR_Tests_Name
+            then
                Copy_File (Full_Name (Search_Item), Compose (Target_Path, Entry_Name));
             elsif Kind (Search_Item) = Directory and then
                   Entry_Name /= "." and then
-                  Entry_Name /= ".."
+                  Entry_Name /= ".." and then
+                  Entry_Name /= ".git" and then
+                  Entry_Name /= "target" and then
+                  Entry_Name /= ".tada" and then
+                  Entry_Name /= "tests"
             then
-               Copy_Tree (Compose (Source_Path, Entry_Name), Compose (Target_Path, Entry_Name));
+               Copy_Tree (Tada_Package, Compose (Source_Path, Entry_Name), Compose (Target_Path, Entry_Name));
             end if;
          end;
       end loop;
@@ -97,17 +105,7 @@ package body Tada.Package_Cache is
       end if;
 
       begin
-         begin
-            Create_Path (Tada_Package_Cache_Path);
-         exception
-            when Use_Error =>
-               raise Package_Cache_Error with "unable to create '" & Tada_Package_Cache_Path & "'";
-         end;
-
-         Copy_File (Compose (Package_Tmp_Path, Packages.Manifest_Name), Manifest_Path (Tada_Package));
-         Copy_File (Compose (Package_Tmp_Path, Tada_Package.GPR_Name), GPR_Path (Tada_Package));
-         Copy_File (Compose (Package_Tmp_Path, Tada_Package.GPR_Config_Name), GPR_Config_Path (Tada_Package));
-         Copy_Tree (Compose (Package_Tmp_Path, "src"), Compose (Tada_Package_Cache_Path, "src"));
+         Copy_Tree (Tada_Package, Package_Tmp_Path, Tada_Package_Cache_Path);
 
          Text_IO.Put_Line ("Installed package '" & Tada_Package.Name & " " & Tada_Package.Version &
                            "' at '" & Tada_Package_Cache_Path & "'");
