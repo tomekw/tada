@@ -1,9 +1,12 @@
 ## unreleased
 
+# 0.8.0
+
 * expose Tada_OS (linux, macos, windows, unknown) variable in GPR files
 * expose Tada_Arch (x86_64, aarch64, unknown) variable in GPR files
 * set Linker switches for stripping dead code in the release profile
 * fix: `tada install` and `tada cache` now cache all package contents instead of only known files, so packages with extra directories (e.g., `vendor/`) work correctly
+
 ## 0.7.0
 
 * validate package versions: Semver + optional prerelease tag, example: `0.1.0-dev`
