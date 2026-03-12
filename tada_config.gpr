@@ -1,4 +1,6 @@
 abstract project Tada_Config is
+   for Create_Missing_Dirs use "True";
+
    type Build_Profile_Kind is ("debug", "release");
    Build_Profile : Build_Profile_Kind := external ("BUILD_PROFILE", "debug");
 
@@ -8,25 +10,25 @@ abstract project Tada_Config is
    type Tada_Arch_Kind is ("x86_64", "aarch64", "unknown");
    Tada_Arch : Tada_Arch_Kind := external ("TADA_ARCH", "unknown");
 
-   Common_Switches := ("-gnat2022", "-gnatwa", "-gnata");
+   Binder_Switches := ();
+   Common_Binder_Switches := ("-Es");
+   case Tada_OS is
+      when "windows" => Binder_Switches := Common_Binder_Switches & ("-static");
+      when others => Binder_Switches := Common_Binder_Switches;
+   end case;
+
+   Builder_Switches := ("-j0", "-s");
+
+   Compiler_Switches := ();
+   Common_Compiler_Switches := ("-gnat2022", "-gnatwa", "-gnata", "-fstack-check", "-gnato", "-g");
    Style_Switches := ("-gnatyaAbCdefhiklnOprStux");
-
-   Debug_Switches := Common_Switches &
-     ("-g",       --  Debug info
-      "-O0",      --  No optimization
-      "-gnateE",  --  Extra exception info
-      "-gnatVa"); --  All validity checks
-
-   Release_Switches := Common_Switches &
-     ("-O2",          --  Optimization
-      "-gnatn",       --  Inlining
-      "-fdata-sections",
-      "-ffunction-sections");
-
-   Ada_Switches := ();
+   Debug_Switches := Common_Compiler_Switches & Style_Switches &
+                       ("-O0", "-gnateE", "-gnatVa");
+   Release_Switches := Common_Compiler_Switches & Style_Switches &
+                         ("-O2", "-gnatn", "-fdata-sections", "-ffunction-sections");
    case Build_Profile is
-      when "debug" => Ada_Switches := Debug_Switches;
-      when "release" => Ada_Switches := Release_Switches;
+      when "debug" => Compiler_Switches := Debug_Switches;
+      when "release" => Compiler_Switches := Release_Switches;
    end case;
 
    Linker_Switches := ();
@@ -35,7 +37,8 @@ abstract project Tada_Config is
       when "release" =>
          case Tada_OS is
             when "macos" => Linker_Switches := ("-Wl,-dead_strip");
-            when "linux" | "windows" => Linker_Switches := ("-Wl,--gc-sections");
+            when "linux" => Linker_Switches := ("-Wl,--gc-sections");
+            when "windows" => Linker_Switches := ("-Wl,--gc-sections", "-static");
             when "unknown" => Linker_Switches := ();
          end case;
    end case;
