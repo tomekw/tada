@@ -1,6 +1,6 @@
 ## unreleased
 
-# 0.8.0
+## 0.8.0
 
 * expose Tada_OS (linux, macos, windows, unknown) variable in GPR files
 * expose Tada_Arch (x86_64, aarch64, unknown) variable in GPR files
