@@ -1,7 +1,7 @@
 package Tada.Packages is
    Manifest_Name : constant String := "tada.toml";
 
-   type Package_Info is tagged private;
+   type Package_Info is private;
 
    function Is_Valid_Name (Name : String) return Boolean;
 
@@ -24,7 +24,7 @@ package Tada.Packages is
    function GPR_Tests_Name (Self : Package_Info) return String;
 private
 
-   type Package_Info is tagged record
+   type Package_Info is record
       Name_Holder : String_Holders.Holder;
       Version_Holder : String_Holders.Holder;
    end record;

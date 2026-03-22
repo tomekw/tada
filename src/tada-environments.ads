@@ -1,7 +1,7 @@
 package Tada.Environments is
    Environment_Error : exception;
 
-   type Environment is tagged private;
+   type Environment is private;
 
    function Is_Windows return Boolean;
 
@@ -28,7 +28,7 @@ private
    type Operating_System_Kind is (Linux, MacOS, Windows, Unknown);
    type Architecture_Kind is (X86_64, Aarch64, Unknown);
 
-   type Environment is tagged record
+   type Environment is record
       GNAT_Path_Holder : String_Holders.Holder;
       GPRBuild_Path_Holder : String_Holders.Holder;
       Config_Source : Config_Source_Kind;

@@ -20,7 +20,7 @@ abstract project Tada_Config is
    Builder_Switches := ("-j0", "-s");
 
    Compiler_Switches := ();
-   Common_Compiler_Switches := ("-gnat2022", "-gnatwa", "-gnata", "-fstack-check", "-gnato", "-g");
+   Common_Compiler_Switches := ("-gnat2022", "-gnatwa", "-gnata", "-gnatX", "-fstack-check", "-gnato", "-g");
    Style_Switches := ("-gnatyaAbCdefhiklnOprStux");
    Debug_Switches := Common_Compiler_Switches & Style_Switches &
                        ("-O0", "-gnateE", "-gnatVa");

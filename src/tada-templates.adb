@@ -112,7 +112,7 @@ package body Tada.Templates is
       Put_Line (File, "   Builder_Switches := (""-j0"", ""-s"");");
       Put_Line (File, "");
       Put_Line (File, "   Compiler_Switches := ();");
-      Put_Line (File, "   Common_Compiler_Switches := (""-gnat2022"", ""-gnatwa"", ""-gnata"", ""-fstack-check"", ""-gnato"", ""-g"");");
+      Put_Line (File, "   Common_Compiler_Switches := (""-gnat2022"", ""-gnatwa"", ""-gnata"", ""-gnatX"", ""-fstack-check"", ""-gnato"", ""-g"");");
       Put_Line (File, "   Style_Switches := (""-gnatyaAbCdefhiklnOprStux"");");
       Put_Line (File, "   Debug_Switches := Common_Compiler_Switches & Style_Switches &");
       Put_Line (File, "     (""-O0"", ""-gnateE"", ""-gnatVa"");");
