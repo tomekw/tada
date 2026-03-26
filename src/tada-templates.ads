@@ -8,6 +8,10 @@ package Tada.Templates is
 
    procedure Emit
      (Path : String;
+      Write : access procedure (File : File_Type));
+
+   procedure Emit
+     (Path : String;
       Write : access procedure (File : File_Type;
                                 Name : String);
       Name : String);
@@ -33,6 +37,8 @@ package Tada.Templates is
    procedure Write_Manifest (File : File_Type; Name : String);
 
    procedure Write_Gitignore (File : File_Type; Name : String);
+
+   procedure Write_Gitattributes (File : File_Type);
 
    procedure Write_GPR_Config (File : File_Type; Name : String);
 

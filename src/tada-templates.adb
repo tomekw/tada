@@ -5,6 +5,17 @@ with Tada.Package_Cache;
 package body Tada.Templates is
    procedure Emit
      (Path : String;
+      Write : access procedure (File : File_Type))
+   is
+      File : File_Type;
+   begin
+      Create (File, Out_File, Path);
+      Write (File);
+      Close (File);
+   end Emit;
+
+   procedure Emit
+     (Path : String;
       Write : access procedure (File : File_Type;
                                 Name : String);
       Name : String)
@@ -86,6 +97,13 @@ package body Tada.Templates is
       Put_Line (File, Name & "_deps.gpr");
       Put_Line (File, Name & "_tests_deps.gpr");
    end Write_Gitignore;
+
+   procedure Write_Gitattributes (File : File_Type) is
+   begin
+      Put_Line (File, "*.ads text eol=lf");
+      Put_Line (File, "*.adb text eol=lf");
+      Put_Line (File, "*.gpr text eol=lf");
+   end Write_Gitattributes;
 
    procedure Write_GPR_Config (File : File_Type; Name : String) is
       MC : constant String := Mixed_Case (Name);

@@ -1,5 +1,9 @@
 ## unreleased
 
+* generate `.gitattributes`
+* adjust `-static` to Binder switches on all platforms
+* add `-gnatX` to Compiler switches
+
 ## 0.8.0
 
 * expose Tada_OS (linux, macos, windows, unknown) variable in GPR files

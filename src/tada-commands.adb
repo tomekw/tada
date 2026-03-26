@@ -465,6 +465,7 @@ package body Tada.Commands is
       Emit (Compose (Root, "README.md"), Write_Readme'Access, New_Package.Name);
       Emit (Compose (Root, Packages.Manifest_Name), Write_Manifest'Access, New_Package.Name);
       Emit (Compose (Root, ".gitignore"), Write_Gitignore'Access, New_Package.Name);
+      Emit (Compose (Root, ".gitattributes"), Write_Gitattributes'Access);
       Emit (Compose (Root, New_Package.GPR_Name), Write_GPR_Main'Access, New_Package.Name, Cmd.Package_Type);
       Emit (Compose (Root, New_Package.GPR_Config_Name), Write_GPR_Config'Access, New_Package.Name);
       Emit (Compose (Root, New_Package.GPR_Deps_Name), Write_GPR_Deps'Access, New_Package.Name, Package_Info_Vectors.Empty_Vector);
