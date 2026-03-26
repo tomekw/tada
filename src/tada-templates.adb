@@ -102,12 +102,7 @@ package body Tada.Templates is
       Put_Line (File, "   type Tada_Arch_Kind is (""x86_64"", ""aarch64"", ""unknown"");");
       Put_Line (File, "   Tada_Arch : Tada_Arch_Kind := external (""TADA_ARCH"", ""unknown"");");
       Put_Line (File, "");
-      Put_Line (File, "   Binder_Switches := ();");
-      Put_Line (File, "   Common_Binder_Switches := (""-Es"");");
-      Put_Line (File, "   case Tada_OS is");
-      Put_Line (File, "      when ""windows"" => Binder_Switches := Common_Binder_Switches & (""-static"");");
-      Put_Line (File, "      when others => Binder_Switches := Common_Binder_Switches;");
-      Put_Line (File, "   end case;");
+      Put_Line (File, "   Binder_Switches := (""-Es"", ""-static"");");
       Put_Line (File, "");
       Put_Line (File, "   Builder_Switches := (""-j0"", ""-s"");");
       Put_Line (File, "");

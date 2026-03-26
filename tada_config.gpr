@@ -10,12 +10,7 @@ abstract project Tada_Config is
    type Tada_Arch_Kind is ("x86_64", "aarch64", "unknown");
    Tada_Arch : Tada_Arch_Kind := external ("TADA_ARCH", "unknown");
 
-   Binder_Switches := ();
-   Common_Binder_Switches := ("-Es");
-   case Tada_OS is
-      when "windows" => Binder_Switches := Common_Binder_Switches & ("-static");
-      when others => Binder_Switches := Common_Binder_Switches;
-   end case;
+   Binder_Switches := ("-Es", "-static");
 
    Builder_Switches := ("-j0", "-s");
 
