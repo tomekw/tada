@@ -3,6 +3,7 @@
 * generate `.gitattributes`
 * adjust `-static` to Binder switches on all platforms
 * add `-gnatX` to Compiler switches
+* add BSD support
 
 ## 0.8.0
 

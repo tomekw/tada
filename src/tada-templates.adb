@@ -114,7 +114,7 @@ package body Tada.Templates is
       Put_Line (File, "   type Build_Profile_Kind is (""debug"", ""release"");");
       Put_Line (File, "   Build_Profile : Build_Profile_Kind := external (""BUILD_PROFILE"", ""debug"");");
       Put_Line (File, "");
-      Put_Line (File, "   type Tada_OS_Kind is (""linux"", ""windows"", ""macos"", ""unknown"");");
+      Put_Line (File, "   type Tada_OS_Kind is (""bsd"", ""linux"", ""windows"", ""macos"", ""unknown"");");
       Put_Line (File, "   Tada_OS : Tada_OS_Kind := external (""TADA_OS"", ""unknown"");");
       Put_Line (File, "");
       Put_Line (File, "   type Tada_Arch_Kind is (""x86_64"", ""aarch64"", ""unknown"");");
@@ -141,8 +141,9 @@ package body Tada.Templates is
       Put_Line (File, "      when ""debug"" => Linker_Switches := ();");
       Put_Line (File, "      when ""release"" =>");
       Put_Line (File, "         case Tada_OS is");
-      Put_Line (File, "            when ""macos"" => Linker_Switches := (""-Wl,-dead_strip"");");
+      Put_Line (File, "            when ""bsd"" => Linker_Switches := (""-Wl,--gc-sections"");");
       Put_Line (File, "            when ""linux"" => Linker_Switches := (""-Wl,--gc-sections"");");
+      Put_Line (File, "            when ""macos"" => Linker_Switches := (""-Wl,-dead_strip"");");
       Put_Line (File, "            when ""windows"" => Linker_Switches := (""-Wl,--gc-sections"", ""-static"");");
       Put_Line (File, "            when ""unknown"" => Linker_Switches := ();");
       Put_Line (File, "         end case;");

@@ -31,6 +31,8 @@ package body Tada.Environments is
    function Operating_System (Self : Environment) return String is
    begin
       case Self.Operating_System is
+         when BSD =>
+            return "bsd";
          when Linux =>
             return "linux";
          when Windows =>
@@ -92,6 +94,8 @@ package body Tada.Environments is
    begin
       if Index (Target_Name, "linux") /= 0 then
          return Linux;
+      elsif Index (Target_Name, "bsd") /= 0 then
+         return BSD;
       elsif Index (Target_Name, "mingw") /= 0 or else
             OS.Directory_Separator = '\'
       then

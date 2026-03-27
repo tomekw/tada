@@ -17,7 +17,7 @@ little programming world around the language. I hope someone finds it useful.
 
 This is alpha software. I'm actively working it. YMMV.
 
-Tested on Linux x86_64, MacOS ARM and Windows x86_64.
+Tested on Linux x86_64, MacOS ARM, OpenBSD x86_64 and Windows x86_64.
 
 ## Prerequisites
 

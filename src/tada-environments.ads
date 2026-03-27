@@ -25,7 +25,7 @@ private
 
    type Config_Source_Kind is (Local, Global, Path);
 
-   type Operating_System_Kind is (Linux, MacOS, Windows, Unknown);
+   type Operating_System_Kind is (BSD, Linux, MacOS, Windows, Unknown);
    type Architecture_Kind is (X86_64, Aarch64, Unknown);
 
    type Environment is record
