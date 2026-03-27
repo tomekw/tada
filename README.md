@@ -19,6 +19,19 @@ This is alpha software. I'm actively working it. YMMV.
 
 Tested on Linux x86_64, MacOS ARM, OpenBSD x86_64 and Windows x86_64.
 
+Note on OpenBSD: you have to:
+
+* install `gcc` / `gnat` > 15.2.0 from ports
+
+* install `gprbuild` manually
+
+* symlink `gcc` to `egcc`:
+
+``` shell
+# as root
+ln -s /usr/local/bin/egcc /usr/local/bin/gcc
+```
+
 ## Prerequisites
 
 * curl
