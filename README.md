@@ -109,7 +109,7 @@ Use `tada cache` to install the current package into the local cache for use as 
 Tada lets you own generated GPR files. `PROJECT_config.gpr` exposes three variables you can use:
 
 * `Build_Profile` - `debug`, `release`
-* `Tada_OS` - `linux`, `windows`, `macos`, `unknown`
+* `Tada_OS` - `bsd`, `linux`, `windows`, `macos`, `unknown`
 * `Tada_Arch` - `x86_64`, `aarch64`, `unknown`
 
 ## Manifest file

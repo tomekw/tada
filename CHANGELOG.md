@@ -1,5 +1,7 @@
 ## unreleased
 
+## 0.9.0
+
 * generate `.gitattributes`
 * adjust `-static` to Binder switches on all platforms
 * add `-gnatX` to Compiler switches
