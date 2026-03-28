@@ -114,10 +114,10 @@ package body Tada.Templates is
       Put_Line (File, "   type Build_Profile_Kind is (""debug"", ""release"");");
       Put_Line (File, "   Build_Profile : Build_Profile_Kind := external (""BUILD_PROFILE"", ""debug"");");
       Put_Line (File, "");
-      Put_Line (File, "   type Tada_OS_Kind is (""bsd"", ""linux"", ""windows"", ""macos"", ""unknown"");");
+      Put_Line (File, "   type Tada_OS_Kind is (""freebsd"", ""linux"", ""macos"", ""openbsd"", ""windows"", ""unknown"");");
       Put_Line (File, "   Tada_OS : Tada_OS_Kind := external (""TADA_OS"", ""unknown"");");
       Put_Line (File, "");
-      Put_Line (File, "   type Tada_Arch_Kind is (""x86_64"", ""aarch64"", ""unknown"");");
+      Put_Line (File, "   type Tada_Arch_Kind is (""aarch64"", ""x86_64"", ""unknown"");");
       Put_Line (File, "   Tada_Arch : Tada_Arch_Kind := external (""TADA_ARCH"", ""unknown"");");
       Put_Line (File, "");
       Put_Line (File, "   Binder_Switches := (""-Es"", ""-static"");");
@@ -141,9 +141,10 @@ package body Tada.Templates is
       Put_Line (File, "      when ""debug"" => Linker_Switches := ();");
       Put_Line (File, "      when ""release"" =>");
       Put_Line (File, "         case Tada_OS is");
-      Put_Line (File, "            when ""bsd"" => Linker_Switches := (""-Wl,--gc-sections"");");
+      Put_Line (File, "            when ""freebsd"" => Linker_Switches := (""-Wl,--gc-sections"");");
       Put_Line (File, "            when ""linux"" => Linker_Switches := (""-Wl,--gc-sections"");");
       Put_Line (File, "            when ""macos"" => Linker_Switches := (""-Wl,-dead_strip"");");
+      Put_Line (File, "            when ""openbsd"" => Linker_Switches := (""-Wl,--gc-sections"");");
       Put_Line (File, "            when ""windows"" => Linker_Switches := (""-Wl,--gc-sections"", ""-static"");");
       Put_Line (File, "            when ""unknown"" => Linker_Switches := ();");
       Put_Line (File, "         end case;");
@@ -166,6 +167,7 @@ package body Tada.Templates is
       MC : constant String := Mixed_Case (Name);
    begin
       Put_Line (File, "with """ & Name & "_config.gpr"";");
+      Put_Line (File, "--  remove the line below if building without tada");
       Put_Line (File, "with """ & Name & "_deps.gpr"";");
       Put_Line (File, "");
       Put_Line (File, "project " & MC & " is");
@@ -215,6 +217,7 @@ package body Tada.Templates is
       MC : constant String := Mixed_Case (Name);
    begin
       Put_Line (File, "with """ & Name & "_config.gpr"";");
+      Put_Line (File, "--  remove the line below if building without tada");
       Put_Line (File, "with """ & Name & "_tests_deps.gpr"";");
       Put_Line (File, "with """ & Name & ".gpr"";");
       Put_Line (File, "");

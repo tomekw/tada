@@ -1,5 +1,7 @@
 ## unreleased
 
+* distinct FreeBSD and OpenBSD support
+
 ## 0.9.0
 
 * generate `.gitattributes`

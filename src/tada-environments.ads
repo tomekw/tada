@@ -25,8 +25,8 @@ private
 
    type Config_Source_Kind is (Local, Global, Path);
 
-   type Operating_System_Kind is (BSD, Linux, MacOS, Windows, Unknown);
-   type Architecture_Kind is (X86_64, Aarch64, Unknown);
+   type Operating_System_Kind is (FreeBSD, Linux, MacOS, OpenBSD, Windows, Unknown);
+   type Architecture_Kind is (Aarch64, X86_64, Unknown);
 
    type Environment is record
       GNAT_Path_Holder : String_Holders.Holder;

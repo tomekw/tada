@@ -19,10 +19,10 @@ package body Tada.Environments is
    function Architecture (Self : Environment) return String is
    begin
       case Self.Architecture is
-         when X86_64 =>
-            return "x86_64";
          when Aarch64 =>
             return "aarch64";
+         when X86_64 =>
+            return "x86_64";
          when Unknown =>
             return "unknown";
       end case;
@@ -31,14 +31,16 @@ package body Tada.Environments is
    function Operating_System (Self : Environment) return String is
    begin
       case Self.Operating_System is
-         when BSD =>
-            return "bsd";
+         when FreeBSD =>
+            return "freebsd";
          when Linux =>
             return "linux";
-         when Windows =>
-            return "windows";
          when MacOS =>
             return "macos";
+         when OpenBSD =>
+            return "openbsd";
+         when Windows =>
+            return "windows";
          when Unknown =>
             return "unknown";
       end case;
@@ -94,14 +96,16 @@ package body Tada.Environments is
    begin
       if Index (Target_Name, "linux") /= 0 then
          return Linux;
-      elsif Index (Target_Name, "bsd") /= 0 then
-         return BSD;
+      elsif Index (Target_Name, "freebsd") /= 0 then
+         return FreeBSD;
+      elsif Index (Target_Name, "openbsd") /= 0 then
+         return OpenBSD;
+      elsif Index (Target_Name, "apple") /= 0 then
+         return MacOS;
       elsif Index (Target_Name, "mingw") /= 0 or else
             OS.Directory_Separator = '\'
       then
          return Windows;
-      elsif Index (Target_Name, "apple") /= 0 then
-         return MacOS;
       else
          return Unknown;
       end if;

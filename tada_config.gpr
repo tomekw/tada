@@ -4,10 +4,10 @@ abstract project Tada_Config is
    type Build_Profile_Kind is ("debug", "release");
    Build_Profile : Build_Profile_Kind := external ("BUILD_PROFILE", "debug");
 
-   type Tada_OS_Kind is ("bsd", "linux", "windows", "macos", "unknown");
+   type Tada_OS_Kind is ("freebsd", "linux", "macos", "openbsd", "windows", "unknown");
    Tada_OS : Tada_OS_Kind := external ("TADA_OS", "unknown");
 
-   type Tada_Arch_Kind is ("x86_64", "aarch64", "unknown");
+   type Tada_Arch_Kind is ("aarch64", "x86_64", "unknown");
    Tada_Arch : Tada_Arch_Kind := external ("TADA_ARCH", "unknown");
 
    Binder_Switches := ("-Es", "-static");
@@ -31,9 +31,10 @@ abstract project Tada_Config is
       when "debug" => Linker_Switches := ();
       when "release" =>
          case Tada_OS is
-            when "bsd" => Linker_Switches := ("-Wl,--gc-sections");
+            when "freebsd" => Linker_Switches := ("-Wl,--gc-sections");
             when "linux" => Linker_Switches := ("-Wl,--gc-sections");
             when "macos" => Linker_Switches := ("-Wl,-dead_strip");
+            when "openbsd" => Linker_Switches := ("-Wl,--gc-sections");
             when "windows" => Linker_Switches := ("-Wl,--gc-sections", "-static");
             when "unknown" => Linker_Switches := ();
          end case;
