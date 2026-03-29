@@ -1,5 +1,7 @@
 ## unreleased
 
+## 0.10.0
+
 * distinct FreeBSD and OpenBSD support
 
 ## 0.9.0
