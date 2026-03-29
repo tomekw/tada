@@ -25,7 +25,7 @@ jobs:
       - name: Install tada
         run: |
           curl -fsSL \
-            https://github.com/tomekw/tada/releases/download/v0.6.0/tada-0.6.0-linux-x86_64 \
+            https://github.com/tomekw/tada/releases/download/v0.10.0/tada-0.10.0-linux-x86_64 \
             -o /usr/local/bin/tada
           chmod +x /usr/local/bin/tada
 
