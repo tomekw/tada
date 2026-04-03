@@ -2,9 +2,14 @@ with Ada.Environment_Variables;
 
 with GNAT.OS_Lib;
 
+with Tackle.Targets;
+
 with Tada.CL_Arguments;
+with Tada.Environments;
 
 package body Tada.Runners is
+   use Tackle;
+
    package OS renames GNAT.OS_Lib;
 
    function Spawn (Executable : String; Arguments : CL_Arguments.Argument_List.Vector) return Boolean is
@@ -59,12 +64,13 @@ package body Tada.Runners is
       return Spawn ("curl", ["-fsSL", "-o", Target, Source]);
    end Run_CURL;
 
-   function Run_GPRBuild (Env : Environments.Environment; Project : String; Profile : String) return Boolean is
+   function Run_GPRBuild (Project : String; Profile : String) return Boolean is
+      Target_Info : constant Targets.Target := Targets.Init;
    begin
       return Spawn ("gprbuild", ["-P", Project & ".gpr",
                                   "-XBUILD_PROFILE=" & Profile,
-                                  "-XTADA_OS=" & Env.Operating_System,
-                                  "-XTADA_ARCH=" & Env.Architecture,
+                                  "-XTADA_OS=" & Target_Info.Operating_System'Image,
+                                  "-XTADA_ARCH=" & Target_Info.Architecture'Image,
                                   "-p"]);
    end Run_GPRBuild;
 
