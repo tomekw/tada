@@ -156,6 +156,10 @@ See the [Packages Index](https://github.com/tadapm/tada-packages).
   
 If there's something you have built with Tada, and would like to have it included in the index, let me know!
 
+## Shell completions
+
+Tada offers Fish completions under `completions/fish/tada.fish`. Copy them to `~/.config/fish/completions/tada.fish`.
+
 ## Disclaimer
 
 This codebase is written by hand. Claude Code is used for Socratic design exploration and code review.
