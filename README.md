@@ -76,19 +76,20 @@ tada build --profile release
 ## Usage
 
 ```bash
-Usage: tada [command] [options]
+Usage: tada <command> [options]
 
 Commands:
-    build [--profile <p>]               Compile the package
-    cache [--force]                     Install package to the local cache, use --force to overwrite
-    clean                               Remove build artifacts
-    config                              Display configuration
-    help                                Show this message
-    init <name> [--exe|--lib]           Create a new package
-    install                             Install dependencies
-    run [--profile <p>] [-- <args>...]  Build and run the executable
-    test [--profile <p>]                Build and run the tests
-    version                             Display version
+  build     Compile the package
+  cache     Install the package to the local cache
+  clean     Remove build artifacts
+  config    Display configuration
+  init      Create a new package
+  install   Install dependencies
+  run       Build and run the executable
+  test      Build and run the tests
+  version   Display version
+
+Run 'tada <command> --help' for command options
 ```
 
 1. Create a new package with `tada init PROJECT_NAME`, either a binary with `--type exe` or a library with `--type lib`. `exe` is the default.
