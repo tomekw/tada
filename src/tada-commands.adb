@@ -36,161 +36,76 @@ package body Tada.Commands is
       end case;
    end Image;
 
-   function Parse_Args (Arguments : CL_Arguments.Argument_List.Vector)
-     return CL_Arguments.Argument_List.Vector
-   is
-      Arguments_Count : constant Natural := Natural (Arguments.Length);
-      Args : CL_Arguments.Argument_List.Vector;
-
-      function Find_Args_Separator return Natural is
-      begin
-         --  Arguments (1) is a command name
-         for I in 2 .. Arguments_Count loop
-            if Arguments (I) = "--" then
-               return I;
-            end if;
-         end loop;
-
-         return 0;
-      end Find_Args_Separator;
-
-      Args_Separator : constant Natural := Find_Args_Separator;
+   function Parse (Result : Opts.Result) return Command is
+      Kind : Command_Kind;
    begin
-      if Args_Separator = Arguments_Count then
-         raise Parse_Error with "missing args";
-      elsif Args_Separator /= 0 then
-         for I in Args_Separator + 1 .. Arguments_Count loop
-            Args.Append (Arguments (I));
-         end loop;
-      end if;
-
-      return Args;
-   end Parse_Args;
-
-   function Parse_Package_Name (Arguments : CL_Arguments.Argument_List.Vector)
-     return String
-   is
-      Arguments_Count : constant Natural := Natural (Arguments.Length);
-   begin
-      if Arguments_Count = 1 then
-         raise Parse_Error with "missing package name";
-      end if;
-
-      declare
-         Package_Name : constant String := Characters.Handling.To_Lower (Arguments (2));
       begin
-         if not Packages.Is_Valid_Name (Package_Name) then
-            raise Parse_Error with "invalid package name '" & Arguments (2) & "'";
-         end if;
-
-         return Package_Name;
+         Kind := Command_Kind'Value (Result.Cmd);
+      exception
+         when Constraint_Error =>
+            raise Parse_Error with "unknown command '" & Result.Cmd & "'";
       end;
-   end Parse_Package_Name;
 
-   function Parse_Package_Type (Arguments : CL_Arguments.Argument_List.Vector)
-     return Package_Kind
-   is
-      Arguments_Count : constant Natural := Natural (Arguments.Length);
-   begin
-      if Arguments_Count < 3 then
-         return Exe;
-      elsif Arguments (3) = "--exe" then
-         return Exe;
-      elsif Arguments (3) = "--lib" then
-         return Lib;
-      else
-         raise Parse_Error with "invalid package type '" & Arguments (3) & "'";
-      end if;
-   end Parse_Package_Type;
-
-   function Parse_Profile (Arguments : CL_Arguments.Argument_List.Vector)
-     return Profile_Kind
-   is
-      Arguments_Count : constant Natural := Natural (Arguments.Length);
-   begin
-      if Arguments_Count < 2 then
-         return Debug;
-      elsif Arguments (2) = "--" then
-         return Debug;
-      elsif Arguments_Count = 2 and then
-            Arguments (2) = "--profile"
-      then
-         raise Parse_Error with "missing profile";
-      else
-         if Arguments (2) /= "--profile" then
-            raise Parse_Error with "unexpected option '" & Arguments (2) & "'";
-         end if;
-
-         begin
-            return Profile_Kind'Value (Arguments (3));
-         exception
-            when Constraint_Error =>
-               raise Parse_Error with "invalid profile '" & Arguments (3) & "'";
-         end;
-      end if;
-   end Parse_Profile;
-
-   function Parse_Force (Arguments : CL_Arguments.Argument_List.Vector)
-     return Boolean
-   is
-      Arguments_Count : constant Natural := Natural (Arguments.Length);
-   begin
-      if Arguments_Count < 2 then
-         return False;
-      elsif Arguments (2) = "--force" then
-         return True;
-      else
-         raise Parse_Error with "invalid option '" & Arguments (2) & "'";
-      end if;
-   end Parse_Force;
-
-   function Parse (Arguments : CL_Arguments.Argument_List.Vector) return Command is
-      Arguments_Count : constant Natural := Natural (Arguments.Length);
-   begin
-      if Arguments_Count = 0 then
-         return (Kind => Help);
-      end if;
-
-      declare
-         Kind : Command_Kind;
-      begin
-         begin
-            Kind := Command_Kind'Value (Arguments (1));
-         exception
-            when Constraint_Error =>
-               raise Parse_Error with "unknown command '" & Arguments (1) & "'";
-         end;
-
-         case Kind is
-            when Build =>
+      case Kind is
+         when Build =>
+            begin
                return (Kind => Build,
-                       Build_Profile => Parse_Profile (Arguments));
-            when Cache =>
-               return (Kind => Cache,
-                       Force => Parse_Force (Arguments));
-            when Clean =>
-               return (Kind => Clean);
-            when Config =>
-               return (Kind => Config);
-            when Help =>
-               return (Kind => Help);
-            when Init =>
+                       Build_Profile => Profile_Kind'Value (Result.Arg ("profile", "debug")));
+            exception
+               when Constraint_Error =>
+                  raise Parse_Error with "invalid profile '" & Result.Arg ("profile", "debug") & "'";
+            end;
+         when Cache =>
+            return (Kind => Cache,
+                    Force => Result.Has_Flag ("force"));
+         when Clean =>
+            return (Kind => Clean);
+         when Config =>
+            return (Kind => Config);
+         when Init =>
+            declare
+               Package_Name : constant String := Characters.Handling.To_Lower (Result.Arg ("name", ""));
+               Package_Type_Arg : constant String := Result.Arg ("type", "exe");
+               Package_Type : Package_Kind;
+            begin
+               if not Packages.Is_Valid_Name (Package_Name) then
+                  raise Parse_Error with "invalid package name '" & Result.Arg ("name", "") & "'";
+               end if;
+
+               if Package_Type_Arg = "exe" then
+                  Package_Type := Exe;
+               elsif Package_Type_Arg = "lib" then
+                  Package_Type := Lib;
+               else
+                  raise Parse_Error with "invalid package type '" & Package_Type_Arg & "'";
+               end if;
+
                return (Kind => Init,
-                       Package_Name => String_Holders.To_Holder (Parse_Package_Name (Arguments)),
-                       Package_Type => Parse_Package_Type (Arguments));
-            when Install =>
-               return (Kind => Install);
-            when Run =>
+                       Package_Name => String_Holders.To_Holder (Package_Name),
+                       Package_Type => Package_Type);
+            end;
+         when Install =>
+            return (Kind => Install);
+         when Run =>
+            begin
                return (Kind => Run,
-                       Run_Profile => Parse_Profile (Arguments),
-                       Args => Parse_Args (Arguments));
-            when Test =>
+                       Run_Profile => Profile_Kind'Value (Result.Arg ("profile", "debug")),
+                       Args => Result.Passthrough_Args);
+            exception
+               when Constraint_Error =>
+                  raise Parse_Error with "invalid profile '" & Result.Arg ("profile", "debug") & "'";
+            end;
+         when Test =>
+            begin
                return (Kind => Test,
-                       Test_Profile => Parse_Profile (Arguments));
-            when Version =>
-               return (Kind => Version);
-         end case;
-      end;
+                       Test_Profile => Profile_Kind'Value (Result.Arg ("profile", "debug")));
+            exception
+               when Constraint_Error =>
+                  raise Parse_Error with "invalid profile '" & Result.Arg ("profile", "debug") & "'";
+            end;
+         when Version =>
+            return (Kind => Version);
+      end case;
    end Parse;
 
    function In_Package_Root return Boolean is
@@ -209,7 +124,7 @@ package body Tada.Commands is
       return Result;
    end Exec_On_Path;
 
-   function Run_Target (Name : String; Arguments : CL_Arguments.Argument_List.Vector)
+   function Run_Target (Name : String; Arguments : Opts.Argument_List)
      return Boolean
    is
       Result : Boolean := False;
@@ -427,23 +342,6 @@ package body Tada.Commands is
       Package_Cache.Cache_Package (Directories.Current_Directory);
    end Execute_Cache;
 
-   procedure Execute_Help is
-   begin
-      Text_IO.Put_Line ("Usage: tada [command] [options]");
-      Text_IO.New_Line;
-      Text_IO.Put_Line ("Commands:");
-      Text_IO.Put_Line ("    build [--profile <p>]               Compile the package");
-      Text_IO.Put_Line ("    cache [--force]                     Install package to the local cache, use --force to overwrite");
-      Text_IO.Put_Line ("    clean                               Remove build artifacts");
-      Text_IO.Put_Line ("    config                              Display configuration");
-      Text_IO.Put_Line ("    help                                Show this message");
-      Text_IO.Put_Line ("    init <name> [--exe|--lib]           Create a new package");
-      Text_IO.Put_Line ("    install                             Install dependencies");
-      Text_IO.Put_Line ("    run [--profile <p>] [-- <args>...]  Build and run the executable");
-      Text_IO.Put_Line ("    test [--profile <p>]                Build and run the tests");
-      Text_IO.Put_Line ("    version                             Display version");
-   end Execute_Help;
-
    procedure Execute_Init (Cmd : Command) is
       use Directories;
       use Templates;
@@ -566,7 +464,7 @@ package body Tada.Commands is
          raise Execute_Error with "test build failed";
       end if;
 
-      if not Run_Target (Exec_Name, CL_Arguments.Argument_List.Empty_Vector)
+      if not Run_Target (Exec_Name, [])
       then
          raise Execute_Error with "tests failed";
       end if;
@@ -575,7 +473,7 @@ package body Tada.Commands is
    procedure Execute (Cmd : Command) is
    begin
       case Cmd.Kind is
-         when Config | Help | Init | Version =>
+         when Config | Init | Version =>
             null;
          when Build | Cache | Clean | Install | Run | Test =>
             if not In_Package_Root then
@@ -601,7 +499,6 @@ package body Tada.Commands is
          when Cache => Execute_Cache (Cmd);
          when Clean => Execute_Clean;
          when Config => Execute_Config;
-         when Help => Execute_Help;
          when Init => Execute_Init (Cmd);
          when Install => Execute_Install;
          when Run => Execute_Run (Cmd);

@@ -1,5 +1,10 @@
 ## unreleased
 
+## 0.11.0
+
+* breaking: reworked command line options
+* breaking: `init` moved from: `tada init PROJECT_NAME --lib|--exe` to `tada init --name PROJECT_NAME --type lib|exe`
+
 ## 0.10.0
 
 * distinct FreeBSD and OpenBSD support

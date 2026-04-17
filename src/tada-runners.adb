@@ -2,9 +2,9 @@ with Ada.Environment_Variables;
 
 with GNAT.OS_Lib;
 
+with Tackle.Opts;
 with Tackle.Targets;
 
-with Tada.CL_Arguments;
 with Tada.Environments;
 
 package body Tada.Runners is
@@ -12,7 +12,7 @@ package body Tada.Runners is
 
    package OS renames GNAT.OS_Lib;
 
-   function Spawn (Executable : String; Arguments : CL_Arguments.Argument_List.Vector) return Boolean is
+   function Spawn (Executable : String; Arguments : Opts.Argument_List) return Boolean is
       use type OS.String_Access;
 
       Env : constant Environments.Environment := Environments.Init;

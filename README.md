@@ -91,9 +91,9 @@ Commands:
     version                             Display version
 ```
 
-1. Create a new package with `tada init`, either a binary with `--exe` or a library with `--lib`.
+1. Create a new package with `tada init PROJECT_NAME`, either a binary with `--type exe` or a library with `--type lib`. `exe` is the default.
 1. Run `tada install` to install dependencies.
-1. Build with `tada build`. Profile is either `--debug` or `--release`. `--debug` is the default.
+1. Build with `tada build`. Profile is either `--profile debug` or `--profile release`. `debug` is the default.
 1. Run with `tada run`. `--` separates arguments passed to the target binary.
 1. Test with `tada test`.
 1. Remove `target/` with `tada clean`.
