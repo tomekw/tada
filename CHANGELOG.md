@@ -1,6 +1,7 @@
 ## unreleased
 
 * bump `testy` to `0.2.0`
+* describe default values in `--help`
 
 ## 0.11.0
 

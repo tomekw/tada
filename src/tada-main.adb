@@ -12,7 +12,7 @@ procedure Tada.Main is
    use Tackle.Opts;
 
    Commands : constant Command_List := [Cmd ("build", "Compile the package",
-                                             [Arg ("profile", 'p', "Build profile, 'debug' or 'release'")]),
+                                             [Arg ("profile", 'p', "Build profile, 'debug' or 'release' (default: debug)")]),
                                         Cmd ("cache", "Install the package to the local cache",
                                              [Flag ("force", 'f', "Overwrite cache")]),
                                         Cmd ("clean", "Remove build artifacts",
@@ -21,14 +21,14 @@ procedure Tada.Main is
                                              []),
                                         Cmd ("init", "Create a new package",
                                              [Arg ("name", 'n', "Package name"),
-                                              Arg ("type", 't', "Package type, 'exe' or 'lib'")]),
+                                              Arg ("type", 't', "Package type, 'exe' or 'lib' (default: exe)")]),
                                         Cmd ("install", "Install dependencies",
                                              []),
                                         Cmd ("run", "Build and run the executable",
-                                             [Arg ("profile", 'p', "Run profile, 'debug' or 'release'")],
+                                             [Arg ("profile", 'p', "Run profile, 'debug' or 'release' (default: debug)")],
                                              Passthrough => True),
                                         Cmd ("test", "Build and run the tests",
-                                             [Arg ("profile", 'p', "Test profile, 'debug' or 'release'")]),
+                                             [Arg ("profile", 'p', "Test profile, 'debug' or 'release' (default: debug)")]),
                                         Cmd ("version", "Display version",
                                              [])];
    Arguments : constant Opts.Argument_List := Opts.Consume_Arguments;
