@@ -125,7 +125,7 @@ bar = "0.5.2"
 baz = "1.2.1"
 
 [dev-dependencies]
-testy = "0.1.0"
+testy = "0.2.0"
 ```
 
 ## Package naming rules

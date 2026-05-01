@@ -87,7 +87,7 @@ package body Tada.Templates is
       Put_Line (File, "[dependencies]");
       New_Line (File);
       Put_Line (File, "[dev-dependencies]");
-      Put_Line (File, "testy = ""0.1.0""");
+      Put_Line (File, "testy = ""0.2.0""");
    end Write_Manifest;
 
    procedure Write_Gitignore (File : File_Type; Name : String) is

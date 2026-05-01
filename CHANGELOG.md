@@ -1,5 +1,7 @@
 ## unreleased
 
+* bump `testy` to `0.2.0`
+
 ## 0.11.0
 
 * breaking: reworked command line options
