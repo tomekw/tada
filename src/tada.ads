@@ -7,8 +7,7 @@ package Tada is
 
    Version : constant String := "0.11.0";
 
-   Package_Index_Url : constant String :=
-     "https://raw.githubusercontent.com/tadapm/tada-packages/refs/heads/main/index";
+   Package_Index_Url : constant String := "https://index.tada.pm/index";
 
    type Package_Kind is (Exe, Lib);
 

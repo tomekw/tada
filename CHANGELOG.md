@@ -2,6 +2,7 @@
 
 * bump `testy` to `0.2.0`
 * describe default values in `--help`
+* change the package index to `https://index.tada.pm/index`
 
 ## 0.11.0
 
