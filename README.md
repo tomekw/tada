@@ -170,7 +170,7 @@ Tada offers Fish completions under `completions/fish/tada.fish`. Copy them to `~
 
 ## Disclaimer
 
-This codebase is written by hand. Claude Code is used for Socratic design exploration and code review.
+This codebase is written by hand.
 
 ## License
 
