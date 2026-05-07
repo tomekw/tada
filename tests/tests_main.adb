@@ -18,6 +18,8 @@ begin
    Test_Runner.Add ("build --profile foo raises Parse_Error", Tada_Commands_Tests.Test_Parse_Build_Unknown'Access);
    Test_Runner.Add ("run parses to Run, profile: debug, no run args", Tada_Commands_Tests.Test_Parse_Run'Access);
    Test_Runner.Add ("run -- foo bar parses to Run, profile: debug, run args", Tada_Commands_Tests.Test_Parse_Run_Args'Access);
+   Test_Runner.Add ("test parses to Test, empty seed", Tada_Commands_Tests.Test_Parse_Test'Access);
+   Test_Runner.Add ("test --seed 10 parses to Test, seed: 10", Tada_Commands_Tests.Test_Parse_Test_Seed'Access);
    Test_Runner.Add ("init raises Parse_Error", Tada_Commands_Tests.Test_Parse_Init'Access);
    Test_Runner.Add ("init hello parses to Init, kind: exe", Tada_Commands_Tests.Test_Parse_Init_Name'Access);
    Test_Runner.Add ("init hello --exe parses to Init, kind: exe", Tada_Commands_Tests.Test_Parse_Init_Name_Exe'Access);

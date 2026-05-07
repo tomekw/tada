@@ -24,7 +24,8 @@ package body Tada_Commands_Tests is
                                              [Arg ("profile", 'p', "Run profile, 'debug' or 'release'")],
                                              Passthrough => True),
                                         Cmd ("test", "Build and run the tests",
-                                             [Arg ("profile", 'p', "Test profile, 'debug' or 'release'")]),
+                                             [Arg ("profile", 'p', "Test profile, 'debug' or 'release' (default: debug)"),
+                                              Arg ("seed", 's', "Seed, value from 0 to 99999")]),
                                         Cmd ("version", "Display version",
                                              [])];
 
@@ -100,6 +101,26 @@ package body Tada_Commands_Tests is
                                                 Args => Run_Args),
               "Expected command: Run, profile: debug, run args: foo, bar");
    end Test_Parse_Run_Args;
+
+   procedure Test_Parse_Test (T : in out Test_Context) is
+      Arguments : constant Argument_List := ["test"];
+      Result : constant Opts.Result := Opts.Parse (Arguments, Commands);
+   begin
+      T.Expect (Tada.Commands.Parse (Result) = (Kind => Test,
+                                                Test_Profile  => Debug,
+                                                Seed => Tada.String_Holders.To_Holder ("")),
+              "Expected command: Test, empty seed");
+   end Test_Parse_Test;
+
+   procedure Test_Parse_Test_Seed (T : in out Test_Context) is
+      Arguments : constant Argument_List := ["test", "--seed", "10"];
+      Result : constant Opts.Result := Opts.Parse (Arguments, Commands);
+   begin
+      T.Expect (Tada.Commands.Parse (Result) = (Kind => Test,
+                                                Test_Profile  => Debug,
+                                                Seed => Tada.String_Holders.To_Holder ("10")),
+              "Expected command: Test, seed: 10");
+   end Test_Parse_Test_Seed;
 
    procedure Parse_Init is
       Arguments : constant Argument_List := ["init"];

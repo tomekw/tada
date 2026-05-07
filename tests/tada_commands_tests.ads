@@ -19,6 +19,10 @@ package Tada_Commands_Tests is
 
    procedure Test_Parse_Run_Args (T : in out Test_Context);
 
+   procedure Test_Parse_Test (T : in out Test_Context);
+
+   procedure Test_Parse_Test_Seed (T : in out Test_Context);
+
    procedure Test_Parse_Init (T : in out Test_Context);
 
    procedure Test_Parse_Init_Name (T : in out Test_Context);
