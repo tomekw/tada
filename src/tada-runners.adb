@@ -79,6 +79,7 @@ package body Tada.Runners is
       return Spawn ("gnatdoc", ["-P", Project & ".gpr",
                                 "--backend", "html",
                                 "-O", "doc",
+                                "--style", "leading",
                                 "--generate", "public"]);
    end Run_GNATdoc;
 
