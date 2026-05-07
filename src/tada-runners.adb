@@ -74,6 +74,14 @@ package body Tada.Runners is
                                   "-p"]);
    end Run_GPRBuild;
 
+   function Run_GNATdoc (Project : String) return Boolean is
+   begin
+      return Spawn ("gnatdoc", ["-P", Project & ".gpr",
+                                "--backend", "html",
+                                "-O", "doc",
+                                "--generate", "public"]);
+   end Run_GNATdoc;
+
    function Run_Tar (Source : String; Target : String) return Boolean is
    begin
       return Spawn ("tar", ["xzf", Source, "-C", Target]);

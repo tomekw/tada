@@ -62,6 +62,8 @@ package body Tada.Commands is
             return (Kind => Clean);
          when Config =>
             return (Kind => Config);
+         when Doc =>
+            return (Kind => Doc);
          when Init =>
             declare
                Package_Name : constant String := Characters.Handling.To_Lower (Result.Arg ("name", ""));
@@ -343,6 +345,14 @@ package body Tada.Commands is
       Package_Cache.Cache_Package (Directories.Current_Directory);
    end Execute_Cache;
 
+   procedure Execute_Doc is
+      Package_Name : constant String := Manifests.Read (Packages.Manifest_Name).Sections ("package") ("name");
+   begin
+      if not Runners.Run_GNATdoc (Package_Name) then
+         raise Execute_Error with "doc failed";
+      end if;
+   end Execute_Doc;
+
    procedure Execute_Init (Cmd : Command) is
       use Directories;
       use Templates;
@@ -476,13 +486,17 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Config | Init | Version =>
             null;
-         when Build | Cache | Clean | Install | Run | Test =>
+         when Build | Cache | Clean | Doc | Install | Run | Test =>
             if not In_Package_Root then
                raise Execute_Error with "could not find '" & Packages.Manifest_Name & "' in current directory";
             end if;
       end case;
 
       case Cmd.Kind is
+         when Doc =>
+            if not Exec_On_Path ("gnatdoc") then
+               raise Execute_Error with "could not find executable 'gnatdoc' in PATH";
+            end if;
          when Install =>
             if not Exec_On_Path ("curl") then
                raise Execute_Error with "could not find executable 'curl' in PATH";
@@ -500,6 +514,7 @@ package body Tada.Commands is
          when Cache => Execute_Cache (Cmd);
          when Clean => Execute_Clean;
          when Config => Execute_Config;
+         when Doc => Execute_Doc;
          when Init => Execute_Init (Cmd);
          when Install => Execute_Install;
          when Run => Execute_Run (Cmd);

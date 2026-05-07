@@ -1,9 +1,10 @@
 ## unreleased
 
 * bump `testy` to `0.3.0`
-* allow to set test seed via `tada test --seed SEED`, requires `testy >= 0.3.0`
+* allow to set test seed with `tada test --seed SEED`, requires `testy >= 0.3.0`
 * describe default values in `--help`
 * change the package index to `https://index.tada.pm/index`
+* generate documentation with `tada doc`, requires `gnatdoc` in `PATH`
 
 ## 0.11.0
 

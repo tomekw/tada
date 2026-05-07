@@ -34,9 +34,15 @@ ln -s /usr/local/bin/egcc /usr/local/bin/gcc
 
 ## Prerequisites
 
+Required:
+
 * curl
 * gnat
 * gprbuild
+
+Optional:
+
+* gnatdoc
 
 By default, `tada` looks for `gnat` and `gprbuild` on the system `PATH`. You can set up local and global toolchain paths.
 
@@ -83,6 +89,7 @@ Commands:
   cache     Install the package to the local cache
   clean     Remove build artifacts
   config    Display configuration
+  doc       Generate documentation
   init      Create a new package
   install   Install dependencies
   run       Build and run the executable

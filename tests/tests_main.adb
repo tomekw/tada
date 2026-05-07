@@ -12,6 +12,7 @@ procedure Tests_Main is
 begin
    Test_Runner.Add ("clean parses to Clean", Tada_Commands_Tests.Test_Parse_Clean'Access);
    Test_Runner.Add ("version parses to Version", Tada_Commands_Tests.Test_Parse_Version'Access);
+   Test_Runner.Add ("doc parses to Doc", Tada_Commands_Tests.Test_Parse_Doc'Access);
    Test_Runner.Add ("build parses to Build, profile: debug", Tada_Commands_Tests.Test_Parse_Build'Access);
    Test_Runner.Add ("build --profile debug parses to Build, profile: debug", Tada_Commands_Tests.Test_Parse_Build_Debug'Access);
    Test_Runner.Add ("build --profile release parses to Build, profile: release", Tada_Commands_Tests.Test_Parse_Build_Release'Access);
