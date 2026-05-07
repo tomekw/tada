@@ -32,6 +32,8 @@ package Tada.Templates is
       Name : String;
       Deps : Package_Info_Vectors.Vector);
 
+   procedure Write_ALS_Json (File : File_Type; Name : String);
+
    procedure Write_Readme (File : File_Type; Name : String);
 
    procedure Write_Manifest (File : File_Type; Name : String);

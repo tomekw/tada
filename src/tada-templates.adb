@@ -73,6 +73,13 @@ package body Tada.Templates is
       return Result;
    end Mixed_Case;
 
+   procedure Write_ALS_Json (File : File_Type; Name : String) is
+   begin
+      Put_Line (File, "{");
+      Put_Line (File, "  ""projectFile"": """ & Name & ".gpr""");
+      Put_Line (File, "}");
+   end Write_ALS_Json;
+
    procedure Write_Readme (File : File_Type; Name : String) is
    begin
       Put_Line (File, "# " & Mixed_Case (Name));

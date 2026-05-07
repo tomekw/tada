@@ -370,6 +370,7 @@ package body Tada.Commands is
       Create_Directory (Compose (Root, "src"));
       Create_Directory (Compose (Root, "tests"));
 
+      Emit (Compose (Root, ".als.json"), Write_ALS_Json'Access, New_Package.Name);
       Emit (Compose (Root, "README.md"), Write_Readme'Access, New_Package.Name);
       Emit (Compose (Root, Packages.Manifest_Name), Write_Manifest'Access, New_Package.Name);
       Emit (Compose (Root, ".gitignore"), Write_Gitignore'Access, New_Package.Name);

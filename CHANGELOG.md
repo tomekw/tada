@@ -5,6 +5,7 @@
 * describe default values in `--help`
 * change the package index to `https://index.tada.pm/index`
 * generate documentation with `tada doc`, requires `gnatdoc` in `PATH`
+* generate `.als.json` file on `tada init`
 
 ## 0.11.0
 
