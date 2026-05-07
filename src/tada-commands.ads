@@ -33,7 +33,7 @@ package Tada.Commands is
             Args : Opts.Argument_List;
          when Test =>
             Test_Profile : Profile_Kind;
-
+            Seed : String_Holders.Holder;
          when Clean | Config | Install | Version =>
             null;
       end case;

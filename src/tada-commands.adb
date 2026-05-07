@@ -98,7 +98,8 @@ package body Tada.Commands is
          when Test =>
             begin
                return (Kind => Test,
-                       Test_Profile => Profile_Kind'Value (Result.Arg ("profile", "debug")));
+                       Test_Profile => Profile_Kind'Value (Result.Arg ("profile", "debug")),
+                       Seed => String_Holders.To_Holder (Result.Arg ("seed", "")));
             exception
                when Constraint_Error =>
                   raise Parse_Error with "invalid profile '" & Result.Arg ("profile", "debug") & "'";
@@ -464,7 +465,7 @@ package body Tada.Commands is
          raise Execute_Error with "test build failed";
       end if;
 
-      if not Run_Target (Exec_Name, [])
+      if not Run_Target (Exec_Name, [Cmd.Seed.Element])
       then
          raise Execute_Error with "tests failed";
       end if;

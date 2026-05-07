@@ -28,7 +28,8 @@ procedure Tada.Main is
                                              [Arg ("profile", 'p', "Run profile, 'debug' or 'release' (default: debug)")],
                                              Passthrough => True),
                                         Cmd ("test", "Build and run the tests",
-                                             [Arg ("profile", 'p', "Test profile, 'debug' or 'release' (default: debug)")]),
+                                             [Arg ("profile", 'p', "Test profile, 'debug' or 'release' (default: debug)"),
+                                              Arg ("seed", 's', "Seed, value from 0 to 99999")]),
                                         Cmd ("version", "Display version",
                                              [])];
    Arguments : constant Opts.Argument_List := Opts.Consume_Arguments;

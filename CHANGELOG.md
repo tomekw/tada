@@ -1,6 +1,7 @@
 ## unreleased
 
-* bump `testy` to `0.2.0`
+* bump `testy` to `0.3.0`
+* allow to set test seed via `tada test --seed SEED`, requires `testy >= 0.3.0`
 * describe default values in `--help`
 * change the package index to `https://index.tada.pm/index`
 
