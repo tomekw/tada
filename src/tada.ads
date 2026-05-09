@@ -5,7 +5,7 @@ with Ada.Containers.Indefinite_Holders;
 package Tada is
    use Ada;
 
-   Version : constant String := "0.11.0";
+   Version : constant String := "0.12.0";
 
    Package_Index_Url : constant String := "https://index.tada.pm/index";
 

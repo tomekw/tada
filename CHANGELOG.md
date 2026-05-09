@@ -1,5 +1,7 @@
 ## unreleased
 
+## 0.12.0
+
 * bump `testy` to `0.3.0`
 * allow to set test seed with `tada test --seed SEED`, requires `testy >= 0.3.0`
 * describe default values in `--help`
