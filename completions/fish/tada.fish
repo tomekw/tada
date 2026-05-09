@@ -10,6 +10,8 @@ complete -c tada -n __fish_use_subcommand -a clean -d "Remove build artifacts"
 
 complete -c tada -n __fish_use_subcommand -a config -d "Display configuration"
 
+complete -c tada -n __fish_use_subcommand -a doc -d "Generate documentation"
+
 complete -c tada -n __fish_use_subcommand -a help -d "Show help"
 
 complete -c tada -n __fish_use_subcommand -a init -d "Create a new package"
@@ -23,5 +25,6 @@ complete -c tada -n "__fish_seen_subcommand_from run" -l profile -rf -a "debug r
 
 complete -c tada -n __fish_use_subcommand -a test -d "Build and run the tests"
 complete -c tada -n "__fish_seen_subcommand_from test" -l profile -rf -a "debug release" -d "Test profile"
+complete -c tada -n "__fish_seen_subcommand_from test" -l seed -rf -d "Seed"
 
 complete -c tada -n __fish_use_subcommand -a version -d "Show version"
