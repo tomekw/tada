@@ -11,6 +11,7 @@ package Tada.Commands is
                          Config,
                          Clean,
                          Doc,
+                         Fmt,
                          Init,
                          Install,
                          Run,
@@ -35,7 +36,7 @@ package Tada.Commands is
          when Test =>
             Test_Profile : Profile_Kind;
             Seed : String_Holders.Holder;
-         when Clean | Config | Doc | Install | Version =>
+         when Clean | Config | Doc | Fmt | Install | Version =>
             null;
       end case;
    end record;

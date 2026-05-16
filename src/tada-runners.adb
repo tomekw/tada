@@ -83,6 +83,13 @@ package body Tada.Runners is
                                 "--generate", "public"]);
    end Run_GNATdoc;
 
+   function Run_GNATformat (Project : String) return Boolean is
+   begin
+      return Spawn ("gnatformat", ["-P", Project & ".gpr",
+                                    "--charset", "utf-8",
+                                    "-w", "120"]);
+   end Run_GNATformat;
+
    function Run_Tar (Source : String; Target : String) return Boolean is
    begin
       return Spawn ("tar", ["xzf", Source, "-C", Target]);

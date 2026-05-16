@@ -21,6 +21,8 @@ procedure Tada.Main is
                                              []),
                                         Cmd ("doc", "Generate documentation",
                                              []),
+                                        Cmd ("fmt", "Format code",
+                                             []),
                                         Cmd ("init", "Create a new package",
                                              [Arg ("name", 'n', "Package name"),
                                               Arg ("type", 't', "Package type, 'exe' or 'lib' (default: exe)")]),

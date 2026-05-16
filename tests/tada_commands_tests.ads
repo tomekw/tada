@@ -9,6 +9,8 @@ package Tada_Commands_Tests is
 
    procedure Test_Parse_Doc (T : in out Test_Context);
 
+   procedure Test_Parse_Fmt (T : in out Test_Context);
+
    procedure Test_Parse_Build (T : in out Test_Context);
 
    procedure Test_Parse_Build_Debug (T : in out Test_Context);

@@ -43,6 +43,7 @@ Required:
 Optional:
 
 * gnatdoc
+* gnatformat
 
 By default, `tada` looks for `gnat` and `gprbuild` on the system `PATH`. You can set up local and global toolchain paths.
 
@@ -90,6 +91,7 @@ Commands:
   clean     Remove build artifacts
   config    Display configuration
   doc       Generate documentation
+  fmt       Format code
   init      Create a new package
   install   Install dependencies
   run       Build and run the executable

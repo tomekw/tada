@@ -1,5 +1,7 @@
 ## unreleased
 
+* format code with `tada fmt`, requires `gnatformat` in `PATH`
+
 ## 0.12.0
 
 * bump `testy` to `0.3.0`

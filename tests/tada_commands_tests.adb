@@ -17,6 +17,8 @@ package body Tada_Commands_Tests is
                                              []),
                                         Cmd ("doc", "Generate documentation",
                                              []),
+                                        Cmd ("fmt", "Format code",
+                                             []),
                                         Cmd ("init", "Create a new package",
                                              [Arg ("name", 'n', "Package name"),
                                               Arg ("type", 't', "Package type, 'exe' or 'lib'")]),
@@ -51,6 +53,13 @@ package body Tada_Commands_Tests is
    begin
       T.Expect (Tada.Commands.Parse (Result) = (Kind => Tada.Commands.Doc), "Expected command: Doc");
    end Test_Parse_Doc;
+
+   procedure Test_Parse_Fmt (T : in out Test_Context) is
+      Arguments : constant Argument_List := ["fmt"];
+      Result : constant Opts.Result := Opts.Parse (Arguments, Commands);
+   begin
+      T.Expect (Tada.Commands.Parse (Result) = (Kind => Tada.Commands.Fmt), "Expected command: Fmt");
+   end Test_Parse_Fmt;
 
    procedure Test_Parse_Build (T : in out Test_Context) is
       Arguments : constant Argument_List := ["build"];

@@ -64,6 +64,8 @@ package body Tada.Commands is
             return (Kind => Config);
          when Doc =>
             return (Kind => Doc);
+         when Fmt =>
+            return (Kind => Fmt);
          when Init =>
             declare
                Package_Name : constant String := Characters.Handling.To_Lower (Result.Arg ("name", ""));
@@ -353,6 +355,14 @@ package body Tada.Commands is
       end if;
    end Execute_Doc;
 
+   procedure Execute_Fmt is
+      Package_Name : constant String := Manifests.Read (Packages.Manifest_Name).Sections ("package") ("name");
+   begin
+      if not Runners.Run_GNATformat (Package_Name) then
+         raise Execute_Error with "fmt failed";
+      end if;
+   end Execute_Fmt;
+
    procedure Execute_Init (Cmd : Command) is
       use Directories;
       use Templates;
@@ -487,7 +497,7 @@ package body Tada.Commands is
       case Cmd.Kind is
          when Config | Init | Version =>
             null;
-         when Build | Cache | Clean | Doc | Install | Run | Test =>
+         when Build | Cache | Clean | Doc | Fmt | Install | Run | Test =>
             if not In_Package_Root then
                raise Execute_Error with "could not find '" & Packages.Manifest_Name & "' in current directory";
             end if;
@@ -497,6 +507,10 @@ package body Tada.Commands is
          when Doc =>
             if not Exec_On_Path ("gnatdoc") then
                raise Execute_Error with "could not find executable 'gnatdoc' in PATH";
+            end if;
+         when Fmt =>
+            if not Exec_On_Path ("gnatformat") then
+               raise Execute_Error with "could not find executable 'gnatformat' in PATH";
             end if;
          when Install =>
             if not Exec_On_Path ("curl") then
@@ -516,6 +530,7 @@ package body Tada.Commands is
          when Clean => Execute_Clean;
          when Config => Execute_Config;
          when Doc => Execute_Doc;
+         when Fmt => Execute_Fmt;
          when Init => Execute_Init (Cmd);
          when Install => Execute_Install;
          when Run => Execute_Run (Cmd);
